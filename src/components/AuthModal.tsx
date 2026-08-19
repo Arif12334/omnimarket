@@ -24,6 +24,7 @@ export const AuthModal: React.FC = () => {
     setActiveModal, 
     loginWithEmail, 
     loginWithOAuth, 
+    loginWithGoogle,
     signup, 
     loginWithPhone,
     showToast
@@ -156,6 +157,17 @@ export const AuthModal: React.FC = () => {
   };
 
   // Google OAuth Trigger
+  const handleGooglePrimaryClick = async () => {
+    setIsLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch {
+      await loginWithOAuth('google', googleAccounts[0]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSelect = async (account: { name: string; email: string; avatar: string }) => {
     setIsLoading(true);
     try {
@@ -392,7 +404,7 @@ export const AuthModal: React.FC = () => {
               <div className="space-y-2.5">
                 <button
                   type="button"
-                  onClick={() => handleGoogleSelect(googleAccounts[0])}
+                  onClick={handleGooglePrimaryClick}
                   disabled={isLoading}
                   id="google-sign-in-primary-btn"
                   className="w-full py-3 px-4 bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer group"

@@ -212,6 +212,41 @@ export interface UserProfile {
   browsingHistory?: string[]; // list of product IDs
   selectedZipCode?: string;
   selectedCity?: string;
+  // Adult Age Verification (21+ for Market Creation)
+  age?: number;
+  birthDate?: string;
+  isAgeVerifiedAdult?: boolean;
+  ownedMarketIds?: string[];
+}
+
+export interface Market {
+  id: string;
+  name: string;
+  slug: string;
+  category: CategorySlug;
+  categoryName: string;
+  description: string;
+  location: string;
+  address: string;
+  city: string;
+  country: string;
+  phone: string;
+  email: string;
+  bannerImage: string;
+  logoImage: string;
+  rating: number;
+  reviewCount: number;
+  totalProductsCount: number;
+  verifiedAdultOwner: boolean;
+  ownerAge: number;
+  ownerName: string;
+  ownerEmail?: string;
+  establishedYear: number;
+  openingHours: string;
+  isOpen: boolean;
+  isAmazonFulfilled?: boolean;
+  tags: string[];
+  createdAt: string;
 }
 
 export type PaymentMethodType = 

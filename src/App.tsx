@@ -17,6 +17,7 @@ import { RufusAiModal } from './components/RufusAiModal';
 import { DealsHubModal } from './components/DealsHubModal';
 import { DeliveryLocationModal } from './components/DeliveryLocationModal';
 import { WishlistModal } from './components/WishlistModal';
+import { AddMarketModal } from './components/AddMarketModal';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
         <DealsHubModal />
         <DeliveryLocationModal />
         <WishlistModal />
+        <AddMarketModal />
       </div>
     </AppProvider>
   );

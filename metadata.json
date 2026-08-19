@@ -1,6 +1,6 @@
 {
   "name": "OmniMarket & Delivery",
-  "description": "Comprehensive eCommerce marketplace with user accounts, multi-category product catalog, secure multi-method checkout, and live interactive delivery map tracking.",
+  "description": "Comprehensive eCommerce marketplace with Firebase integration, verified adult market creation (21+), multi-category product catalog, secure checkout, and live delivery map tracking.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

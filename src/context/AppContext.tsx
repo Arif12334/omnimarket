@@ -14,7 +14,8 @@ import {
   OrderStatus,
   InstallmentDetails,
   Wishlist,
-  WishlistItem
+  WishlistItem,
+  Market
 } from '../types';
 import { 
   PRODUCTS, 
@@ -22,9 +23,18 @@ import {
   PROMO_CODES, 
   INITIAL_SAMPLE_ORDER, 
   SHIPPING_METHODS,
-  SAMPLE_DRIVER 
+  SAMPLE_DRIVER,
+  SAMPLE_MARKETS
 } from '../data/mockData';
 import { enrichProductWithAmazonFeatures } from '../utils/amazonUtils';
+import { 
+  auth, 
+  signInWithFirebaseGoogle, 
+  signInWithFirebaseEmail, 
+  signUpWithFirebaseEmail, 
+  logoutFromFirebase, 
+  onAuthStateChanged 
+} from '../firebase';
 
 export type ModalType = 
   | 'auth' 
@@ -41,6 +51,7 @@ export type ModalType =
   | 'deal_hub_modal'
   | 'location_modal'
   | 'wishlist_modal'
+  | 'add_market_modal'
   | null;
 
 export interface ToastInfo {
@@ -124,6 +135,16 @@ interface AppContextType {
   browsingHistory: Product[];
   recordProductView: (product: Product) => void;
   clearBrowsingHistory: () => void;
+
+  // Markets & Seller Hub (Adults > 20)
+  markets: Market[];
+  selectedMarket: Market | null;
+  setSelectedMarket: (market: Market | null) => void;
+  addMarket: (marketData: Omit<Market, 'id' | 'rating' | 'reviewCount' | 'createdAt'>) => Market;
+  verifyAdultAge: (age: number, birthDate?: string) => boolean;
+  isAdultVerified: boolean;
+  userAge: number;
+  addNewProduct: (productData: Partial<Product>) => Product;
 
   // Fast 1-Click Amazon Actions
   buyNow: (product: Product, color?: string, variations?: Record<string, string>) => void;
@@ -223,9 +244,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
       const saved = localStorage.getItem('omnimarket_user');
-      return saved ? JSON.parse(saved) : { ...DEFAULT_USER, isPrimeMember: true };
+      return saved ? JSON.parse(saved) : null;
     } catch {
-      return { ...DEFAULT_USER, isPrimeMember: true };
+      return null;
     }
   });
 
@@ -304,6 +325,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [activeOrder, setActiveOrder] = useState<Order | null>(INITIAL_SAMPLE_ORDER);
 
+  // Markets & Seller Hub (Adults > 20)
+  const [markets, setMarkets] = useState<Market[]>(() => {
+    try {
+      const saved = localStorage.getItem('omnimarket_markets');
+      return saved ? JSON.parse(saved) : SAMPLE_MARKETS;
+    } catch {
+      return SAMPLE_MARKETS;
+    }
+  });
+  const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+
+  const [userAge, setUserAge] = useState<number>(() => {
+    try {
+      if (user?.age) return user.age;
+      const saved = localStorage.getItem('omnimarket_user_age');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [isAdultVerified, setIsAdultVerified] = useState<boolean>(() => {
+    try {
+      if (user?.isAgeVerifiedAdult || (user?.age && user.age > 20)) return true;
+      const saved = localStorage.getItem('omnimarket_adult_verified');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   // Modals & Navigation
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup' | 'forgot_password'>('login');
@@ -364,6 +416,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [orders]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('omnimarket_markets', JSON.stringify(markets));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [markets]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('omnimarket_adult_verified', JSON.stringify(isAdultVerified));
+      if (userAge > 0) {
+        localStorage.setItem('omnimarket_user_age', userAge.toString());
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [isAdultVerified, userAge]);
+
+  // Listen to Firebase Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser((prev) => {
+          const current = prev || DEFAULT_USER;
+          return {
+            ...current,
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || current.name || 'OmniMarket Shopper',
+            email: firebaseUser.email || current.email,
+            avatar: firebaseUser.photoURL || current.avatar,
+            authProvider: (firebaseUser.providerData[0]?.providerId.includes('google') ? 'google' : 'email') as any,
+            isPrimeMember: true
+          };
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const showToast = (title: string, message?: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
     setToasts((prev) => [...prev, { id, title, message, type }]);
@@ -377,7 +469,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Auth Handlers
-  const loginWithEmail = async (email: string, _pass: string): Promise<boolean> => {
+  const loginWithEmail = async (email: string, pass: string): Promise<boolean> => {
+    // Attempt Firebase Email sign-in
+    try {
+      if (pass && pass.length >= 6) {
+        await signInWithFirebaseEmail(email, pass);
+      }
+    } catch (e) {
+      console.warn('Firebase email auth notice:', e);
+    }
+
     // Check if there is saved registered user data in localStorage
     let existingProfile: Partial<UserProfile> = {};
     try {
@@ -425,6 +526,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const googleAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80';
     const appleAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80';
     
+    // If google provider, attempt Firebase Google popup
+    if (provider === 'google' && !profile) {
+      try {
+        const { user: fbUser } = await signInWithFirebaseGoogle();
+        if (fbUser) {
+          const loggedUser: UserProfile = {
+            ...DEFAULT_USER,
+            id: fbUser.uid,
+            name: fbUser.displayName || 'Arif Ogunsheye',
+            email: fbUser.email || 'arifogunsheye2@gmail.com',
+            avatar: fbUser.photoURL || googleAvatar,
+            authProvider: 'google',
+            isPrimeMember: true
+          };
+          setUser(loggedUser);
+          showToast('Signed in with Google', `Connected as ${loggedUser.email}`, 'success');
+          setActiveModal(null);
+          return true;
+        }
+      } catch (err) {
+        console.warn('Firebase popup handled with fallback:', err);
+      }
+    }
+
     const loggedUser: UserProfile = {
       ...DEFAULT_USER,
       id: `oauth-${provider}-${Date.now()}`,
@@ -443,14 +568,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithGoogle = async (
     profile?: { name?: string; email?: string; avatar?: string }
   ): Promise<boolean> => {
-    return loginWithOAuth('google', profile || {
-      name: 'Arif Ogunsheye',
-      email: 'arifogunsheye2@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'
-    });
+    return loginWithOAuth('google', profile);
   };
 
-  const signup = async (name: string, email: string, phone: string, _pass: string): Promise<boolean> => {
+  const signup = async (name: string, email: string, phone: string, pass: string): Promise<boolean> => {
+    // Attempt Firebase Email registration
+    try {
+      if (pass && pass.length >= 6) {
+        await signUpWithFirebaseEmail(email, pass);
+      }
+    } catch (e) {
+      console.warn('Firebase signup notice:', e);
+    }
+
     const newUser: UserProfile = {
       ...DEFAULT_USER,
       id: `usr-${Date.now()}`,
@@ -478,6 +608,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    logoutFromFirebase();
     setUser(null);
     showToast('Signed Out', 'You have been safely logged out', 'info');
   };
@@ -1302,6 +1433,95 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFilterState((prev) => ({ ...prev, search: q }));
   };
 
+  // Adult Age Verification & Market Management (Age > 20)
+  const verifyAdultAge = (age: number, birthDate?: string): boolean => {
+    setUserAge(age);
+    if (age > 20) {
+      setIsAdultVerified(true);
+      if (user) {
+        setUser({
+          ...user,
+          age,
+          birthDate,
+          isAgeVerifiedAdult: true
+        });
+      }
+      showToast('Age Verified (21+)', `Adult status confirmed (Age ${age}). Market creation unlocked!`, 'success');
+      return true;
+    } else {
+      setIsAdultVerified(false);
+      showToast('Age Restriction', `You must be older than 20 years to create a marketplace. (Entered age: ${age})`, 'error');
+      return false;
+    }
+  };
+
+  const addMarket = (marketData: Omit<Market, 'id' | 'rating' | 'reviewCount' | 'createdAt'>): Market => {
+    const newMarket: Market = {
+      ...marketData,
+      id: `market-${Date.now()}`,
+      rating: 5.0,
+      reviewCount: 1,
+      createdAt: new Date().toISOString()
+    };
+
+    setMarkets((prev) => [newMarket, ...prev]);
+
+    if (user) {
+      const owned = user.ownedMarketIds || [];
+      setUser({
+        ...user,
+        ownedMarketIds: [...owned, newMarket.id]
+      });
+    }
+
+    showToast('Market Published!', `"${newMarket.name}" has been successfully added to OmniMarket.`, 'success');
+    return newMarket;
+  };
+
+  const addNewProduct = (productData: Partial<Product>): Product => {
+    const newProd: Product = {
+      id: `prod-${Date.now()}`,
+      name: productData.name || 'New Marketplace Item',
+      slug: (productData.name || 'new-product').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      brand: productData.brand || 'OmniMarket Seller',
+      category: productData.category || 'electronics',
+      price: productData.price || 49.99,
+      originalPrice: productData.originalPrice || productData.price || 59.99,
+      discountPercentage: productData.discountPercentage || 0,
+      rating: 5.0,
+      reviewCount: 1,
+      stockCount: productData.stockCount || 50,
+      condition: productData.condition || 'New',
+      location: productData.location || 'OmniMarket Verified Hub',
+      description: productData.description || 'Brand new product listed by verified merchant.',
+      highlights: productData.highlights || ['Verified Merchant', 'Brand New', 'Fast Shipping'],
+      specs: productData.specs || { 'Authenticity': '100% Guaranteed', 'Warranty': '1 Year' },
+      images: productData.images && productData.images.length > 0 ? productData.images : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80'],
+      seller: productData.seller || {
+        id: 'seller-new',
+        name: 'Verified Market Merchant',
+        rating: 5.0,
+        totalSales: 1,
+        verified: true,
+        responseTime: 'Within 1 hour',
+        location: 'United States',
+        joinedDate: 'August 2026',
+        isAmazonFulfilled: true
+      },
+      reviews: [],
+      deliveryEstimateDays: 2,
+      tags: productData.tags || ['New Arrival', 'Verified Seller', 'Prime Ready'],
+      isPrimeEligible: true,
+      primeDeliveryTime: 'Tomorrow 8 AM',
+      amazonChoiceTag: 'New Seller Launch'
+    };
+
+    const enriched = enrichProductWithAmazonFeatures(newProd, products);
+    setProducts((prev) => [enriched, ...prev]);
+    showToast('Product Listed!', `"${newProd.name}" is now live in the store catalog.`, 'success');
+    return enriched;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1370,6 +1590,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         browsingHistory,
         recordProductView,
         clearBrowsingHistory,
+
+        // Markets & Age Verification
+        markets,
+        selectedMarket,
+        setSelectedMarket,
+        addMarket,
+        verifyAdultAge,
+        isAdultVerified,
+        userAge,
+        addNewProduct,
 
         buyNow,
         addBundleToCart,
