@@ -3258,18 +3258,18 @@ export const SHIPPING_METHODS: ShippingMethod[] = [
 ];
 
 export const DEFAULT_USER: UserProfile = {
-  id: 'usr-8921',
-  name: 'Arif Ogunsheye',
-  email: 'arifogunsheye2@gmail.com',
-  phone: '+1 (555) 234-8901',
+  id: 'usr-guest',
+  name: 'OmniMarket Shopper',
+  email: 'shopper@omnimarket.com',
+  phone: '+1 (555) 019-2834',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
   authProvider: 'email',
   savedAddresses: [
     {
       id: 'addr-1',
       label: 'Home',
-      fullName: 'Arif Ogunsheye',
-      phone: '+1 (555) 234-8901',
+      fullName: 'OmniMarket Shopper',
+      phone: '+1 (555) 019-2834',
       street: '742 Evergreen Terrace, Apt 4B',
       city: 'New York',
       state: 'NY',
@@ -3282,8 +3282,8 @@ export const DEFAULT_USER: UserProfile = {
     {
       id: 'addr-2',
       label: 'Office',
-      fullName: 'Arif Ogunsheye (Tech Corp)',
-      phone: '+1 (555) 234-8902',
+      fullName: 'OmniMarket Delivery',
+      phone: '+1 (555) 019-2835',
       street: '350 5th Avenue, Suite 2200',
       city: 'New York',
       state: 'NY',
@@ -3297,7 +3297,7 @@ export const DEFAULT_USER: UserProfile = {
   savedPaymentCards: [
     {
       id: 'card-1',
-      cardHolder: 'ARIF OGUNSHTEYE',
+      cardHolder: 'VALUED SHOPPER',
       brand: 'visa',
       last4: '4242',
       expMonth: '08',
@@ -3306,7 +3306,7 @@ export const DEFAULT_USER: UserProfile = {
     },
     {
       id: 'card-2',
-      cardHolder: 'ARIF OGUNSHTEYE',
+      cardHolder: 'VALUED SHOPPER',
       brand: 'mastercard',
       last4: '8819',
       expMonth: '11',

@@ -10,12 +10,11 @@ import {
   CheckCircle2, 
   ShieldCheck, 
   Eye, 
-  EyeOff,
-  Sparkles,
-  KeyRound,
-  Smartphone,
-  Info,
-  Check
+  EyeOff, 
+  Sparkles, 
+  KeyRound, 
+  Smartphone, 
+  Info
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
@@ -33,9 +32,9 @@ export const AuthModal: React.FC = () => {
   // Mode: login, signup, forgot_password, google_chooser, phone_otp
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot' | 'google_chooser' | 'phone'>('login');
   
-  // Normal Email Fields
-  const [email, setEmail] = useState('arifogunsheye2@gmail.com');
-  const [password, setPassword] = useState('password123');
+  // Normal Email Fields (Clean, blank by default for each visitor)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -48,14 +47,13 @@ export const AuthModal: React.FC = () => {
   const [showSignupPass, setShowSignupPass] = useState(false);
 
   // Phone Login Fields
-  const [phone, setPhone] = useState('+1 (555) 234-8901');
+  const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
 
-  // Google Chooser Custom Email
+  // Google Custom Account Input
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
-  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
 
   // Loading & error states
   const [isLoading, setIsLoading] = useState(false);
@@ -63,43 +61,6 @@ export const AuthModal: React.FC = () => {
   const [resetSentEmail, setResetSentEmail] = useState('');
 
   if (activeModal !== 'auth') return null;
-
-  // Preset Google Accounts for realistic 1-click Google sign in
-  const googleAccounts = [
-    {
-      name: 'Arif Ogunsheye',
-      email: 'arifogunsheye2@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-      badge: 'Current User • 1-Click Sign In',
-      isPrimary: true
-    },
-    {
-      name: 'Alex Morgan',
-      email: 'alex.morgan.work@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-      badge: 'Personal Google Account',
-      isPrimary: false
-    },
-    {
-      name: 'Dev Shopper',
-      email: 'dev.shopper@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
-      badge: 'Google Workspace',
-      isPrimary: false
-    }
-  ];
-
-  // Quick fill helper for testing
-  const handleQuickFill = (type: 'arif' | 'alex') => {
-    if (type === 'arif') {
-      setEmail('arifogunsheye2@gmail.com');
-      setPassword('securePass2026!');
-    } else {
-      setEmail('alex.morgan@omnimarket.io');
-      setPassword('password123');
-    }
-    setErrorMessage('');
-  };
 
   // Normal Email Login Submit
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -156,22 +117,18 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  // Google OAuth Trigger
+  // Google OAuth Trigger (Standard Firebase Google Sign-In Popup)
   const handleGooglePrimaryClick = async () => {
     setIsLoading(true);
+    setErrorMessage('');
     try {
-      await loginWithGoogle();
-    } catch {
-      await loginWithOAuth('google', googleAccounts[0]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSelect = async (account: { name: string; email: string; avatar: string }) => {
-    setIsLoading(true);
-    try {
-      await loginWithOAuth('google', account);
+      const success = await loginWithGoogle();
+      if (!success) {
+        setAuthMode('google_chooser');
+      }
+    } catch (err: any) {
+      console.warn('Google sign in error:', err);
+      setAuthMode('google_chooser');
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +146,7 @@ export const AuthModal: React.FC = () => {
       await loginWithOAuth('google', {
         name,
         email: customGoogleEmail.trim(),
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`
       });
     } finally {
       setIsLoading(false);
@@ -206,7 +163,7 @@ export const AuthModal: React.FC = () => {
         return;
       }
       setCodeSent(true);
-      showToast('SMS Code Sent', `Enter the 6-digit code sent to ${phone}`, 'info');
+      showToast('SMS Code Sent', `Enter the 6-digit verification code sent to ${phone}`, 'info');
       return;
     }
 
@@ -235,28 +192,34 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+      id="auth-modal-backdrop"
+    >
+      <div 
+        className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto"
+        id="auth-modal-content"
+      >
         
         {/* Header with Branding & Close */}
         <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-900 to-amber-500 text-white flex items-center justify-center font-black text-sm shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-900 to-amber-500 text-white flex items-center justify-center font-black text-sm shadow-xs">
               OM
             </div>
             <div>
               <div className="flex items-center gap-1">
-                <span className="font-black text-slate-900 text-sm tracking-tight font-heading">
-                  Omni<span className="text-amber-500">Prime</span>
+                <span className="font-black text-slate-900 text-sm tracking-tight">
+                  Omni<span className="text-amber-500">Market</span>
                 </span>
                 <span className="text-[10px] bg-slate-900 text-amber-300 font-bold px-1.5 py-0.2 rounded">
-                  Auth
+                  Secure Auth
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium">
-                {authMode === 'login' && 'Sign in to access your account & Prime benefits'}
-                {authMode === 'signup' && 'Create your new customer account'}
-                {authMode === 'google_chooser' && 'Choose a Google Account to sign in'}
+                {authMode === 'login' && 'Sign in to access your orders, cart & Prime benefits'}
+                {authMode === 'signup' && 'Create your new OmniMarket customer account'}
+                {authMode === 'google_chooser' && 'Sign in with your Google account'}
                 {authMode === 'phone' && 'Sign in with Mobile SMS verification'}
                 {authMode === 'forgot' && 'Reset your account password'}
               </p>
@@ -284,12 +247,12 @@ export const AuthModal: React.FC = () => {
           )}
 
           {/* ========================================================= */}
-          {/* VIEW 1: GOOGLE ACCOUNT CHOOSER POPUP / SELECTOR */}
+          {/* VIEW 1: GOOGLE ACCOUNT LOGIN */}
           {/* ========================================================= */}
           {authMode === 'google_chooser' && (
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="text-center pb-2">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-sm mb-2">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-xs mb-2">
                   <svg className="w-6 h-6" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
@@ -309,80 +272,68 @@ export const AuthModal: React.FC = () => {
                     />
                   </svg>
                 </div>
-                <h4 className="font-bold text-slate-900 text-sm">Choose an account</h4>
-                <p className="text-xs text-slate-500">to continue to OmniPrime Marketplace</p>
+                <h4 className="font-bold text-slate-900 text-sm">Google Account Sign In</h4>
+                <p className="text-xs text-slate-500">Sign in with your Google email address</p>
               </div>
 
-              {/* List of Accounts */}
-              <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50 shadow-2xs">
-                {googleAccounts.map((acc, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleGoogleSelect(acc)}
-                    disabled={isLoading}
-                    className="w-full p-3.5 flex items-center gap-3.5 hover:bg-white transition-colors text-left group cursor-pointer"
-                  >
-                    <img
-                      src={acc.avatar}
-                      alt={acc.name}
-                      referrerPolicy="no-referrer"
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-200 group-hover:ring-indigo-500 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-bold text-slate-900 truncate">{acc.name}</p>
-                        {acc.isPrimary && (
-                          <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded-full">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate">{acc.email}</p>
-                      <span className="text-[10px] text-indigo-600 font-medium block">{acc.badge}</span>
-                    </div>
-                  </button>
-                ))}
+              {/* Direct Google Popup Trigger */}
+              <button
+                type="button"
+                onClick={handleGooglePrimaryClick}
+                disabled={isLoading}
+                className="w-full py-3 px-4 bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-xs sm:text-sm rounded-xl shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer"
+              >
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                </svg>
+                <span>Launch Google Popup</span>
+              </button>
+
+              <div className="relative flex items-center justify-center my-2">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-2 text-[10px] uppercase font-bold text-slate-400 absolute">
+                  or enter your Gmail
+                </span>
               </div>
 
-              {/* Use Another Google Account Toggle */}
-              {!showCustomGoogleInput ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCustomGoogleInput(true)}
-                  className="w-full py-2.5 px-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/50 rounded-xl border border-dashed border-indigo-200 flex items-center justify-center gap-2 transition-colors"
-                >
-                  <UserIcon className="w-3.5 h-3.5" />
-                  <span>Use another Google account</span>
-                </button>
-              ) : (
-                <form onSubmit={handleCustomGoogleSubmit} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
-                  <span className="text-xs font-bold text-slate-800 block">Custom Google Account</span>
+              {/* Enter Your Own Gmail / Google Workspace Form */}
+              <form onSubmit={handleCustomGoogleSubmit} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Your Google / Gmail Address</label>
                   <input
                     type="email"
                     value={customGoogleEmail}
                     onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    placeholder="your.google.account@gmail.com"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                    placeholder="yourname@gmail.com"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                     required
+                    id="custom-google-email-input"
                   />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Your Full Name (optional)</label>
                   <input
                     type="text"
                     value={customGoogleName}
                     onChange={(e) => setCustomGoogleName(e.target.value)}
-                    placeholder="Display Name (optional)"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                    placeholder="e.g. Jane Doe"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
+                    id="custom-google-name-input"
                   />
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <span>Sign in with this Google Account</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  id="submit-custom-google-btn"
+                >
+                  <span>Connect with this Google Account</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </form>
 
               <button
                 type="button"
@@ -427,71 +378,13 @@ export const AuthModal: React.FC = () => {
                       d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                     />
                   </svg>
-                  <span>Sign in with Google</span>
-                </button>
-
-                {/* 1-Click Fast Google Continue with Profile Preview */}
-                <button
-                  type="button"
-                  onClick={() => handleGoogleSelect(googleAccounts[0])}
-                  disabled={isLoading}
-                  id="google-quick-continue-btn"
-                  className="w-full p-2.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 hover:from-blue-100/90 hover:to-indigo-100/90 border border-blue-200/80 hover:border-blue-300 text-slate-900 rounded-xl flex items-center gap-3 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-2xs group"
-                >
-                  <img
-                    src={googleAccounts[0].avatar}
-                    alt={googleAccounts[0].name}
-                    referrerPolicy="no-referrer"
-                    className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500/40 shrink-0"
-                  />
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-900 truncate">
-                        Continue as {googleAccounts[0].name}
-                      </span>
-                      <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.2 rounded-full">
-                        Google
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-600 truncate">{googleAccounts[0].email}</p>
-                  </div>
-                  <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shadow-2xs text-blue-600 group-hover:translate-x-0.5 transition-transform">
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                </button>
-
-                {/* Switch Google Account Button */}
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('google_chooser')}
-                  id="google-sign-in-btn"
-                  className="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
-                  </svg>
-                  <span>Choose another Google Account</span>
+                  <span>{isLoading ? 'Connecting to Google...' : 'Sign in with Google'}</span>
                 </button>
 
                 <div className="relative flex items-center justify-center my-3">
                   <div className="border-t border-slate-200 w-full" />
                   <span className="bg-white px-3 text-[10px] uppercase font-extrabold tracking-wider text-slate-400 absolute">
-                    or sign in with password
+                    or sign in with email
                   </span>
                 </div>
               </div>
@@ -509,8 +402,8 @@ export const AuthModal: React.FC = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      placeholder="your.email@example.com"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 font-medium"
                       required
                       id="auth-email-input"
                     />
@@ -536,7 +429,7 @@ export const AuthModal: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 pr-9 text-xs text-slate-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 pr-9 text-xs text-slate-900 focus:outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 font-medium"
                       required
                       id="auth-password-input"
                     />
@@ -584,33 +477,12 @@ export const AuthModal: React.FC = () => {
                     <span>Signing in...</span>
                   ) : (
                     <>
-                      <span>Sign In with Password</span>
+                      <span>Sign In to Your Account</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </form>
-
-              {/* Quick Fill Testing bar */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                <span className="font-semibold text-slate-400">Quick Test:</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('arif')}
-                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium text-[10px]"
-                  >
-                    Arif Ogunsheye
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('alex')}
-                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium text-[10px]"
-                  >
-                    Alex Morgan
-                  </button>
-                </div>
-              </div>
 
               {/* Switch to Signup */}
               <div className="text-center pt-2 border-t border-slate-100 text-xs text-slate-600">
@@ -642,7 +514,8 @@ export const AuthModal: React.FC = () => {
               {/* Google Fast Signup Alternative */}
               <button
                 type="button"
-                onClick={() => setAuthMode('google_chooser')}
+                onClick={handleGooglePrimaryClick}
+                disabled={isLoading}
                 className="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-2xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
@@ -651,7 +524,7 @@ export const AuthModal: React.FC = () => {
                   <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
                 </svg>
-                <span>Fast 1-Click Sign Up with Google</span>
+                <span>Fast Sign Up with Google</span>
               </button>
 
               <div className="relative flex items-center justify-center my-2">
@@ -672,8 +545,8 @@ export const AuthModal: React.FC = () => {
                       type="text"
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
-                      placeholder="First and last name"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                      placeholder="e.g. John Smith"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                       required
                     />
                     <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -689,7 +562,7 @@ export const AuthModal: React.FC = () => {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       placeholder="you@domain.com"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                       required
                     />
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -707,7 +580,7 @@ export const AuthModal: React.FC = () => {
                       value={signupPhone}
                       onChange={(e) => setSignupPhone(e.target.value)}
                       placeholder="+1 (555) 000-0000"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                     />
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   </div>
@@ -722,7 +595,7 @@ export const AuthModal: React.FC = () => {
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
                       placeholder="At least 6 characters"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 pr-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 pr-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                       required
                     />
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -745,7 +618,7 @@ export const AuthModal: React.FC = () => {
                       value={signupConfirmPass}
                       onChange={(e) => setSignupConfirmPass(e.target.value)}
                       placeholder="Repeat password"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                       required
                     />
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -765,7 +638,7 @@ export const AuthModal: React.FC = () => {
                   disabled={isLoading}
                   className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer mt-1"
                 >
-                  <span>{isLoading ? 'Creating Account...' : 'Create your OmniPrime Account'}</span>
+                  <span>{isLoading ? 'Creating Account...' : 'Create your OmniMarket Account'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
@@ -834,7 +707,7 @@ export const AuthModal: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                        className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                         required
                       />
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -843,7 +716,7 @@ export const AuthModal: React.FC = () => {
 
                   <button
                     type="submit"
-                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors"
+                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
                   >
                     Send Password Reset Link
                   </button>
@@ -885,8 +758,8 @@ export const AuthModal: React.FC = () => {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+1 (555) 234-8901"
-                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                      placeholder="+1 (555) 000-0000"
+                      className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-3 py-2.5 pl-9 text-xs text-slate-900 focus:outline-hidden focus:border-indigo-600 font-medium"
                       required
                     />
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -911,7 +784,7 @@ export const AuthModal: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>{!codeSent ? 'Send SMS Code' : 'Verify & Sign In'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -935,9 +808,9 @@ export const AuthModal: React.FC = () => {
         <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Google Identity & 256-Bit SSL Protection</span>
+            <span>Google Identity &amp; 256-Bit SSL Protection</span>
           </div>
-          <span>Terms & Privacy</span>
+          <span>Terms &amp; Privacy</span>
         </div>
 
       </div>

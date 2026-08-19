@@ -523,38 +523,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     provider: 'google' | 'apple',
     profile?: { name?: string; email?: string; avatar?: string }
   ): Promise<boolean> => {
-    const googleAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80';
-    const appleAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80';
+    const googleAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
+    const appleAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
     
     // If google provider, attempt Firebase Google popup
     if (provider === 'google' && !profile) {
       try {
-        const { user: fbUser } = await signInWithFirebaseGoogle();
+        const { user: fbUser, error: fbError } = await signInWithFirebaseGoogle();
         if (fbUser) {
           const loggedUser: UserProfile = {
             ...DEFAULT_USER,
             id: fbUser.uid,
-            name: fbUser.displayName || 'Arif Ogunsheye',
-            email: fbUser.email || 'arifogunsheye2@gmail.com',
+            name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Google User',
+            email: fbUser.email || 'user@gmail.com',
             avatar: fbUser.photoURL || googleAvatar,
             authProvider: 'google',
             isPrimeMember: true
           };
           setUser(loggedUser);
-          showToast('Signed in with Google', `Connected as ${loggedUser.email}`, 'success');
+          showToast('Signed in with Google', `Welcome, ${loggedUser.name}! Connected with ${loggedUser.email}`, 'success');
           setActiveModal(null);
           return true;
+        } else if (fbError) {
+          console.warn('Firebase popup notice:', fbError);
         }
       } catch (err) {
-        console.warn('Firebase popup handled with fallback:', err);
+        console.warn('Firebase popup exception:', err);
       }
     }
+
+    const defaultEmail = profile?.email || (provider === 'google' ? 'shopper@gmail.com' : 'user@icloud.com');
+    const defaultName = profile?.name || defaultEmail.split('@')[0] || (provider === 'google' ? 'Google Shopper' : 'Apple User');
 
     const loggedUser: UserProfile = {
       ...DEFAULT_USER,
       id: `oauth-${provider}-${Date.now()}`,
-      name: profile?.name || (provider === 'google' ? 'Arif Ogunsheye' : 'Apple User'),
-      email: profile?.email || (provider === 'google' ? 'arifogunsheye2@gmail.com' : 'user@icloud.com'),
+      name: defaultName,
+      email: defaultEmail,
       avatar: profile?.avatar || (provider === 'google' ? googleAvatar : appleAvatar),
       authProvider: provider,
       isPrimeMember: true
