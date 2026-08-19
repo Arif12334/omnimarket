@@ -72,6 +72,46 @@ export const Navbar: React.FC = () => {
 
   const popularSearches = ['OLED 4K TV', '5G Smartphone', 'Espresso Machine', 'Wireless Headphones', 'Noise Cancelling'];
 
+  // Mobile Collapsing Header Scroll Listener
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const delta = currentScrollY - lastScrollYRef.current;
+
+          // Header is scrolled past initial threshold
+          setIsScrolled(currentScrollY > 24);
+
+          // Collapse/hide header on scroll down on mobile, reveal on scroll up
+          if (searchFocused || userMenuOpen || categoryMenuOpen) {
+            // Keep header pinned while user is interacting with search or menus
+            setIsHeaderHidden(false);
+          } else if (currentScrollY > 70 && delta > 6) {
+            // Scrolling down firmly -> collapse header on mobile
+            setIsHeaderHidden(true);
+          } else if (delta < -4 || currentScrollY <= 30) {
+            // Scrolling up or near page top -> reveal header
+            setIsHeaderHidden(false);
+          }
+
+          lastScrollYRef.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [searchFocused, userMenuOpen, categoryMenuOpen]);
+
   // Handle clicking outside dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -87,9 +127,20 @@ export const Navbar: React.FC = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header 
+      id="main-app-header"
+      className={`sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs transition-all duration-300 ease-in-out ${
+        isHeaderHidden 
+          ? '-translate-y-full md:translate-y-0 shadow-none' 
+          : 'translate-y-0 shadow-xs'
+      }`}
+    >
       {/* Top Banner Bar with Amazon Prime and Delivery Location */}
-      <div className="bg-slate-950 text-slate-300 text-xs py-1.5 px-4 sm:px-6">
+      <div className={`bg-slate-950 text-slate-300 text-xs px-4 sm:px-6 transition-all duration-250 ease-in-out ${
+        isScrolled 
+          ? 'max-h-0 sm:max-h-12 opacity-0 sm:opacity-100 overflow-hidden py-0 sm:py-1.5' 
+          : 'max-h-14 opacity-100 py-1.5'
+      }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Amazon Deliver To Location Selector */}
