@@ -16,7 +16,7 @@ import { PrimeBadge } from './PrimeBadge';
 import { CategorySlug } from '../types';
 
 export const DealsHubModal: React.FC = () => {
-  const { activeModal, setActiveModal, products, addToCart, openProductDetails, isPrimeMember } = useApp();
+  const { activeModal, setActiveModal, products, addToCart, openProductDetails, isPrimeMember, formatPrice } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   if (activeModal !== 'deal_hub_modal') return null;
@@ -106,13 +106,13 @@ export const DealsHubModal: React.FC = () => {
                   {featuredDeal.description}
                 </p>
 
-                <div className="flex items-baseline gap-3 pt-2">
+                <div className="flex items-baseline gap-3 pt-2 flex-wrap">
                   <span className="text-2xl font-black text-amber-400">
-                    ${featuredDeal.price.toFixed(2)}
+                    {formatPrice(featuredDeal.price)}
                   </span>
                   {featuredDeal.originalPrice && (
                     <span className="text-sm text-slate-400 line-through">
-                      ${featuredDeal.originalPrice.toFixed(2)}
+                      {formatPrice(featuredDeal.originalPrice)}
                     </span>
                   )}
                   <span className="text-xs font-bold text-red-400 bg-red-950/60 px-2 py-0.5 rounded-md border border-red-800">
@@ -189,10 +189,10 @@ export const DealsHubModal: React.FC = () => {
                         {p.name}
                       </h4>
 
-                      <div className="flex items-baseline gap-2 mt-2">
-                        <span className="text-base font-black text-slate-900">${p.price.toFixed(2)}</span>
+                      <div className="flex items-baseline gap-2 mt-2 flex-wrap">
+                        <span className="text-base font-black text-slate-900">{formatPrice(p.price)}</span>
                         {p.originalPrice && (
-                          <span className="text-xs text-slate-400 line-through">${p.originalPrice.toFixed(2)}</span>
+                          <span className="text-xs text-slate-400 line-through">{formatPrice(p.originalPrice)}</span>
                         )}
                       </div>
 

@@ -11,7 +11,9 @@ import {
   ShieldCheck, 
   Sparkles,
   Percent,
-  Check
+  Check,
+  Coins,
+  Gift
 } from 'lucide-react';
 import { PROMO_CODES } from '../data/mockData';
 
@@ -29,7 +31,11 @@ export const CartDrawer: React.FC = () => {
     appliedPromo, 
     applyPromoCode, 
     removePromoCode,
-    openCheckout 
+    openCheckout,
+    formatPrice,
+    selectedCurrency,
+    currentCurrencyConfig,
+    claimedBundles
   } = useApp();
 
   const [promoInput, setPromoInput] = useState('');
@@ -91,7 +97,7 @@ export const CartDrawer: React.FC = () => {
           </div>
         </div>
 
-        {/* Free Shipping Progress bar */}
+            {/* Free Shipping Progress bar */}
         {cartItems.length > 0 && (
           <div className="bg-indigo-50/60 px-5 py-2.5 border-b border-indigo-100">
             <div className="flex items-center justify-between text-xs font-semibold mb-1">
@@ -101,7 +107,7 @@ export const CartDrawer: React.FC = () => {
                     <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" /> Free Standard Delivery Unlocked!
                   </span>
                 ) : (
-                  <span>Add <strong className="text-indigo-600 font-bold">${remainingForFreeDelivery.toFixed(2)}</strong> for Free Delivery</span>
+                  <span>Add <strong className="text-indigo-600 font-bold">{formatPrice(remainingForFreeDelivery)}</strong> for Free Delivery</span>
                 )}
               </span>
               <span className="text-[10px] text-indigo-600 font-bold">{Math.round(progressToFreeDelivery)}%</span>
@@ -149,7 +155,7 @@ export const CartDrawer: React.FC = () => {
 
                   <div className="flex items-center justify-between mt-2.5">
                     <span className="text-xs font-extrabold text-slate-900">
-                      ${(item.unitPrice * item.quantity).toFixed(2)}
+                      {formatPrice(item.unitPrice * item.quantity)}
                     </span>
 
                     {/* Quantity controller */}
@@ -212,7 +218,7 @@ export const CartDrawer: React.FC = () => {
                   <div className="flex items-center gap-2 text-emerald-800 font-bold">
                     <Tag className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Coupon: {appliedPromo.code}</span>
-                    <span className="text-[10px] text-emerald-600">(-${cartDiscount.toFixed(2)})</span>
+                    <span className="text-[10px] text-emerald-600">(-{formatPrice(cartDiscount)})</span>
                   </div>
                   <button
                     onClick={removePromoCode}
@@ -245,17 +251,58 @@ export const CartDrawer: React.FC = () => {
               )}
             </div>
 
+            {/* OmniMarket Claimed Vouchers Quick Apply */}
+            {claimedBundles.length > 0 && !appliedPromo && (
+              <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                <div className="flex items-center justify-between text-[11px] font-black text-amber-900 mb-1.5">
+                  <span className="flex items-center gap-1">
+                    <Gift className="w-3.5 h-3.5 text-orange-600" />
+                    <span>Your OmniMarket Vouchers ({claimedBundles.length})</span>
+                  </span>
+                  <span className="text-[10px] text-amber-700">1-Tap Apply</span>
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                  {claimedBundles.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => applyPromoCode(b.code)}
+                      className="px-2 py-1 bg-white hover:bg-amber-100 border border-amber-300 rounded-lg text-[10px] font-bold text-slate-800 shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
+                    >
+                      <Tag className="w-2.5 h-2.5 text-red-500" />
+                      <span>{b.code} ({formatPrice(b.discountAmount)} off)</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Currency switcher inside cart */}
+            <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-200/90 text-xs">
+              <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <Coins className="w-3.5 h-3.5 text-amber-500" />
+                <span>Currency: <strong>{currentCurrencyConfig.flag} {selectedCurrency} ({currentCurrencyConfig.symbol.trim()})</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal('currency_modal')}
+                className="text-indigo-600 hover:text-indigo-800 font-bold text-[11px] underline"
+              >
+                Change
+              </button>
+            </div>
+
             {/* Price Calculations */}
             <div className="space-y-1.5 text-xs text-slate-600 pt-1">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-semibold text-slate-900">${cartSubtotal.toFixed(2)}</span>
+                <span className="font-semibold text-slate-900">{formatPrice(cartSubtotal)}</span>
               </div>
 
               {cartDiscount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-medium">
                   <span>Discount ({appliedPromo?.code})</span>
-                  <span>-${cartDiscount.toFixed(2)}</span>
+                  <span>-{formatPrice(cartDiscount)}</span>
                 </div>
               )}
 
@@ -265,19 +312,19 @@ export const CartDrawer: React.FC = () => {
                   {cartSubtotal >= freeDeliveryThreshold ? (
                     <strong className="text-emerald-600 font-bold">FREE</strong>
                   ) : (
-                    '$4.99'
+                    formatPrice(4.99)
                   )}
                 </span>
               </div>
 
               <div className="flex justify-between">
                 <span>Estimated Tax (8.25%)</span>
-                <span>${cartTax.toFixed(2)}</span>
+                <span>{formatPrice(cartTax)}</span>
               </div>
 
               <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-2 border-t border-slate-200">
-                <span>Total</span>
-                <span className="text-base text-indigo-600 font-extrabold">${finalTotal.toFixed(2)}</span>
+                <span>Total ({selectedCurrency})</span>
+                <span className="text-base text-indigo-600 font-extrabold">{formatPrice(finalTotal)}</span>
               </div>
             </div>
 
@@ -286,10 +333,10 @@ export const CartDrawer: React.FC = () => {
               onClick={() => {
                 setActiveModal('checkout');
               }}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all"
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
               id="cart-checkout-cta"
             >
-              <span>Secure Checkout</span>
+              <span>Secure Checkout ({formatPrice(finalTotal)})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 

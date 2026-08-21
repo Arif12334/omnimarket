@@ -28,7 +28,7 @@ interface Message {
 }
 
 export const RufusAiModal: React.FC = () => {
-  const { activeModal, setActiveModal, selectedProduct, products, openProductDetails, addToCart } = useApp();
+  const { activeModal, setActiveModal, selectedProduct, products, openProductDetails, addToCart, formatPrice } = useApp();
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => [
@@ -36,8 +36,8 @@ export const RufusAiModal: React.FC = () => {
       id: 'init-1',
       sender: 'rufus',
       text: selectedProduct
-        ? `Hi! I'm **Rufus**, Amazon's AI Shopping Assistant. I've analyzed verified customer reviews, manufacturer specifications, and warranty details for **${selectedProduct.name}**. What would you like to know?`
-        : `Hi! I'm **Rufus**, your Amazon AI Shopping Assistant. I can help you find products, compare options, discover Lightning Deals, or summarize customer opinions. What are you looking for today?`,
+        ? `Hi! I'm **Omni AI**, OmniMarket's AI Shopping Assistant. I've analyzed verified customer reviews, manufacturer specifications, and warranty details for **${selectedProduct.name}**. What would you like to know?`
+        : `Hi! I'm **Omni AI**, your OmniMarket AI Shopping Assistant. I can help you find products, compare options, discover Lightning Deals, or summarize customer opinions. What are you looking for today?`,
       timestamp: 'Just now',
       suggestedFollowUps: selectedProduct
         ? [
@@ -140,7 +140,7 @@ export const RufusAiModal: React.FC = () => {
                 className="w-7 h-7 rounded object-cover border border-amber-200 shrink-0"
               />
               <span className="font-semibold text-slate-800 truncate">{selectedProduct.name}</span>
-              <span className="font-bold text-slate-900 shrink-0">${selectedProduct.price.toFixed(2)}</span>
+              <span className="font-bold text-slate-900 shrink-0">{formatPrice(selectedProduct.price)}</span>
             </div>
             <button
               onClick={() => openProductDetails(selectedProduct)}
@@ -202,7 +202,7 @@ export const RufusAiModal: React.FC = () => {
                             <img src={p.images[0]} alt={p.name} className="w-10 h-10 rounded object-cover shrink-0" />
                             <div className="min-w-0">
                               <p className="font-semibold text-slate-900 truncate text-xs">{p.name}</p>
-                              <p className="font-bold text-slate-900 text-xs">${p.price.toFixed(2)}</p>
+                              <p className="font-bold text-slate-900 text-xs">{formatPrice(p.price)}</p>
                             </div>
                           </div>
                           <button

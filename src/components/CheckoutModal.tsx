@@ -20,10 +20,13 @@ import {
   Check,
   Calendar,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  Coins,
+  Globe
 } from 'lucide-react';
 import { SHIPPING_METHODS } from '../data/mockData';
-import { SavedAddress, ShippingMethod, PaymentMethodType, InstallmentPlanType } from '../types';
+import { SavedAddress, ShippingMethod, PaymentMethodType, InstallmentPlanType, CurrencyCode } from '../types';
+import { SUPPORTED_CURRENCIES } from '../data/currencies';
 import { getInstallmentPlans, generateInstallmentSchedule, createInstallmentDetails } from '../utils/installmentUtils';
 import confetti from 'canvas-confetti';
 
@@ -38,7 +41,11 @@ export const CheckoutModal: React.FC = () => {
     appliedPromo, 
     createOrder,
     addAddress,
-    showToast
+    showToast,
+    selectedCurrency,
+    setSelectedCurrency,
+    formatPrice,
+    currentCurrencyConfig
   } = useApp();
 
   if (activeModal !== 'checkout') return null;
@@ -242,7 +249,7 @@ export const CheckoutModal: React.FC = () => {
       <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[94vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
               <Lock className="w-4 h-4" />
@@ -255,12 +262,34 @@ export const CheckoutModal: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => setActiveModal(null)}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Currency Selection Dropdown & Close */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs shadow-2xs">
+              <span className="text-sm">{currentCurrencyConfig.flag}</span>
+              <label htmlFor="checkout-currency-select" className="text-[11px] font-bold text-slate-500">
+                Currency:
+              </label>
+              <select
+                id="checkout-currency-select"
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value as CurrencyCode)}
+                className="bg-transparent font-bold text-slate-900 text-xs focus:outline-none cursor-pointer"
+              >
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.code} ({c.symbol.trim()}) - {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setActiveModal(null)}
+              className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -445,7 +474,7 @@ export const CheckoutModal: React.FC = () => {
 
                       <div className="text-right">
                         <span className="text-xs font-extrabold text-slate-900">
-                          {method.price === 0 ? 'FREE' : `$${method.price.toFixed(2)}`}
+                          {method.price === 0 ? 'FREE' : formatPrice(method.price)}
                         </span>
                         <span className="text-[10px] text-slate-400 block">{method.estimatedDays}</span>
                       </div>
@@ -564,8 +593,8 @@ export const CheckoutModal: React.FC = () => {
                               onClick={() => setSelectedInstallmentPlan(plan.id)}
                               className={`p-3 rounded-xl border text-left transition-all relative ${
                                 isPlanSelected
-                                  ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-2 ring-indigo-500/20'
-                                  : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                                    ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-2 ring-indigo-500/20'
+                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
                               }`}
                             >
                               {plan.recommended && (
@@ -577,7 +606,7 @@ export const CheckoutModal: React.FC = () => {
                                 <span className="text-xs font-bold text-slate-900">{plan.title}</span>
                               </div>
                               <div className="text-base font-extrabold text-indigo-600 mt-1">
-                                ${plan.installmentAmount.toFixed(2)}
+                                {formatPrice(plan.installmentAmount)}
                                 <span className="text-[10px] font-medium text-slate-500 ml-1">{plan.periodLabel}</span>
                               </div>
                               <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between">
@@ -597,7 +626,7 @@ export const CheckoutModal: React.FC = () => {
                           2. Installment Schedule Breakdown ({activeSchedule.length} payments)
                         </span>
                         <span className="text-[11px] font-bold text-indigo-600">
-                          Total: ${finalTotal.toFixed(2)}
+                          Total: {formatPrice(finalTotal)}
                         </span>
                       </div>
 
@@ -624,7 +653,7 @@ export const CheckoutModal: React.FC = () => {
                                 )}
                               </div>
                               <div className={`text-sm font-extrabold mt-0.5 ${isFirst ? 'text-white' : 'text-slate-900'}`}>
-                                ${item.amount.toFixed(2)}
+                                {formatPrice(item.amount)}
                               </div>
                               <div className={`text-[10px] mt-0.5 truncate ${isFirst ? 'text-indigo-200 font-medium' : 'text-slate-500'}`}>
                                 {item.dueDate}
@@ -639,7 +668,7 @@ export const CheckoutModal: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                           <span>
-                            You only pay <strong>${downPaymentAmount.toFixed(2)} today</strong>. We dispatch your full order right away!
+                            You only pay <strong>{formatPrice(downPaymentAmount)} today</strong> in <strong>{selectedCurrency}</strong>. We dispatch your full order right away!
                           </span>
                         </div>
                       </div>
@@ -891,7 +920,7 @@ export const CheckoutModal: React.FC = () => {
                           <span className="text-[10px] text-slate-400">Qty: {item.quantity}</span>
                         </div>
                       </div>
-                      <span className="font-bold text-slate-900">${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold text-slate-900">{formatPrice(item.unitPrice * item.quantity)}</span>
                     </div>
                   ))}
                 </div>
@@ -900,30 +929,36 @@ export const CheckoutModal: React.FC = () => {
                 <div className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-200">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="font-semibold text-slate-900">${cartSubtotal.toFixed(2)}</span>
+                    <span className="font-semibold text-slate-900">{formatPrice(cartSubtotal)}</span>
                   </div>
 
                   {cartDiscount > 0 && (
                     <div className="flex justify-between text-emerald-600 font-bold">
                       <span>Promo ({appliedPromo?.code})</span>
-                      <span>-${cartDiscount.toFixed(2)}</span>
+                      <span>-{formatPrice(cartDiscount)}</span>
                     </div>
                   )}
 
                   <div className="flex justify-between">
                     <span>Delivery ({selectedShipping.name})</span>
-                    <span>{deliveryFee === 0 ? <strong className="text-emerald-600">FREE</strong> : `$${deliveryFee.toFixed(2)}`}</span>
+                    <span>{deliveryFee === 0 ? <strong className="text-emerald-600">FREE</strong> : formatPrice(deliveryFee)}</span>
                   </div>
 
                   <div className="flex justify-between">
                     <span>Sales Tax (8.25%)</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatPrice(tax)}</span>
                   </div>
 
                   <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
-                    <span>Total Order Value</span>
-                    <span className="text-slate-900 text-base">${finalTotal.toFixed(2)}</span>
+                    <span>Total ({selectedCurrency})</span>
+                    <span className="text-slate-900 text-base font-black">{formatPrice(finalTotal)}</span>
                   </div>
+
+                  {selectedCurrency !== 'USD' && (
+                    <div className="text-[11px] text-slate-400 text-right -mt-1 font-mono">
+                      ≈ ${finalTotal.toFixed(2)} USD base
+                    </div>
+                  )}
 
                   {paymentMethod === 'installments' && (
                     <div className="bg-indigo-50/80 border border-indigo-100 rounded-xl p-3 space-y-1.5 mt-2 text-xs">
@@ -932,11 +967,11 @@ export const CheckoutModal: React.FC = () => {
                           <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                           Due Today (1st Split):
                         </span>
-                        <span className="text-indigo-600 font-black text-sm">${downPaymentAmount.toFixed(2)}</span>
+                        <span className="text-indigo-600 font-black text-sm">{formatPrice(downPaymentAmount)}</span>
                       </div>
                       <div className="flex justify-between text-slate-500 text-[11px]">
                         <span>Remaining {activeSchedule.length - 1} Payments:</span>
-                        <span className="font-semibold">${remainingInstallmentBalance.toFixed(2)} total</span>
+                        <span className="font-semibold">{formatPrice(remainingInstallmentBalance)} total</span>
                       </div>
                     </div>
                   )}
@@ -959,7 +994,7 @@ export const CheckoutModal: React.FC = () => {
                     <>
                       <div className="flex items-center gap-2">
                         <Lock className="w-4 h-4" />
-                        <span>Pay ${downPaymentAmount.toFixed(2)} Today & Place Order</span>
+                        <span>Pay {formatPrice(downPaymentAmount)} Today & Place Order</span>
                       </div>
                       <span className="text-[10px] font-medium text-indigo-200">
                         {activePlanOption.title} • 0% APR • Ships immediately
@@ -968,7 +1003,7 @@ export const CheckoutModal: React.FC = () => {
                   ) : (
                     <div className="flex items-center gap-2">
                       <Lock className="w-4 h-4" />
-                      <span>Pay ${finalTotal.toFixed(2)} & Place Order</span>
+                      <span>Pay {formatPrice(finalTotal)} & Place Order</span>
                     </div>
                   )}
                 </button>

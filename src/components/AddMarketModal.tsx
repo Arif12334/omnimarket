@@ -277,7 +277,16 @@ export const AddMarketModal: React.FC = () => {
                 id="tab-market-directory"
               >
                 <Building2 className="w-4 h-4" />
-                <span>Browse Active Markets ({markets.length})</span>
+                <span>My Markets ({markets.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveModal('markets_directory_modal')}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300 transition-all shadow-2xs"
+                id="btn-open-global-1200-markets"
+              >
+                <Store className="w-4 h-4 text-amber-700" />
+                <span>Global Markets Directory (1,250+)</span>
               </button>
             </div>
 

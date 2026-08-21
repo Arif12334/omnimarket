@@ -35,7 +35,8 @@ export const DeliveryTrackerModal: React.FC = () => {
     orders, 
     products, 
     openTrackProduct,
-    openTrackOrder 
+    openTrackOrder,
+    formatPrice
   } = useApp();
 
   const activeOrder = contextActiveOrder || (orders.length > 0 ? orders[0] : INITIAL_SAMPLE_ORDER);
@@ -586,7 +587,7 @@ export const DeliveryTrackerModal: React.FC = () => {
                           <div className="flex items-center gap-2 text-[10px] text-slate-400">
                             <span>Qty: {item.quantity}</span>
                             <span>•</span>
-                            <span className="text-indigo-600 font-bold">${item.unitPrice.toFixed(2)}</span>
+                            <span className="text-indigo-600 font-bold">{formatPrice(item.unitPrice, activeOrder.currency || 'USD')}</span>
                           </div>
                         </div>
                       </div>

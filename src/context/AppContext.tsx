@@ -15,7 +15,13 @@ import {
   InstallmentDetails,
   Wishlist,
   WishlistItem,
-  Market
+  Market,
+  CurrencyCode,
+  CurrencyConfig,
+  CouponBundleItem,
+  WheelPrize,
+  SlashItem,
+  SlashHistoryItem
 } from '../types';
 import { 
   PRODUCTS, 
@@ -26,7 +32,19 @@ import {
   SAMPLE_DRIVER,
   SAMPLE_MARKETS
 } from '../data/mockData';
+import { 
+  TEMU_COUPON_BUNDLES, 
+  TEMU_VIP_200_BUNDLES, 
+  WHEEL_PRIZES 
+} from '../data/temuData';
 import { enrichProductWithAmazonFeatures } from '../utils/amazonUtils';
+import { 
+  SUPPORTED_CURRENCIES, 
+  CURRENCY_MAP, 
+  formatCurrency, 
+  convertFromUSD, 
+  convertToUSD 
+} from '../data/currencies';
 import { 
   auth, 
   signInWithFirebaseGoogle, 
@@ -52,6 +70,13 @@ export type ModalType =
   | 'location_modal'
   | 'wishlist_modal'
   | 'add_market_modal'
+  | 'markets_directory_modal'
+  | 'market_details_modal'
+  | 'currency_modal'
+  | 'spin_wheel_modal'
+  | 'price_slash_modal'
+  | 'coupon_bundle_modal'
+  | 'mystery_box_modal'
   | null;
 
 export interface ToastInfo {
@@ -62,6 +87,30 @@ export interface ToastInfo {
 }
 
 interface AppContextType {
+  // Temu Gamification & Ultra Rewards
+  spinsRemaining: number;
+  walletCredit: number;
+  claimedBundles: CouponBundleItem[];
+  claimBundle: (bundle: CouponBundleItem) => void;
+  claimAllBundles: (bundles: CouponBundleItem[]) => void;
+  spinLuckyWheel: () => Promise<WheelPrize>;
+  slashItems: SlashItem[];
+  performSlash: (slashItemId: string) => { amount: number; remaining: number; isComplete: boolean };
+  claimSlashedItem: (slashItemId: string) => void;
+  addWalletCredit: (amount: number, reason?: string) => void;
+  openSpinWheel: () => void;
+  openPriceSlash: () => void;
+  openCouponBundle: () => void;
+  openMysteryBox: () => void;
+
+  // Multi-Currency Buying Support
+  selectedCurrency: CurrencyCode;
+  setSelectedCurrency: (currency: CurrencyCode) => void;
+  formatPrice: (amountInUSD: number, targetCurrency?: CurrencyCode, options?: { showCode?: boolean; customDecimals?: number }) => string;
+  convertPrice: (amountInUSD: number, targetCurrency?: CurrencyCode) => number;
+  currencies: CurrencyConfig[];
+  currentCurrencyConfig: CurrencyConfig;
+
   // User Authentication & Profile
   user: UserProfile | null;
   isAuthenticated: boolean;
@@ -140,6 +189,7 @@ interface AppContextType {
   markets: Market[];
   selectedMarket: Market | null;
   setSelectedMarket: (market: Market | null) => void;
+  openMarketDetails: (market: Market) => void;
   addMarket: (marketData: Omit<Market, 'id' | 'rating' | 'reviewCount' | 'createdAt'>) => Market;
   verifyAdultAge: (age: number, birthDate?: string) => boolean;
   isAdultVerified: boolean;
@@ -329,12 +379,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [markets, setMarkets] = useState<Market[]>(() => {
     try {
       const saved = localStorage.getItem('omnimarket_markets');
-      return saved ? JSON.parse(saved) : SAMPLE_MARKETS;
+      if (saved) {
+        const parsed: Market[] = JSON.parse(saved);
+        if (parsed && parsed.length >= 100) {
+          return parsed;
+        } else if (parsed && parsed.length > 0) {
+          // Merge user-created markets with full catalog of thousands of markets
+          const customMarkets = parsed.filter(m => !SAMPLE_MARKETS.some(sm => sm.id === m.id));
+          return [...customMarkets, ...SAMPLE_MARKETS];
+        }
+      }
+      return SAMPLE_MARKETS;
     } catch {
       return SAMPLE_MARKETS;
     }
   });
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+
+  const openMarketDetails = (market: Market) => {
+    setSelectedMarket(market);
+    setActiveModal('market_details_modal');
+  };
 
   const [userAge, setUserAge] = useState<number>(() => {
     try {
@@ -359,6 +424,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Modals & Navigation
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'signup' | 'forgot_password'>('login');
+
+  // Multi-Currency Selection (Stored in localStorage)
+  const [selectedCurrency, setSelectedCurrencyState] = useState<CurrencyCode>(() => {
+    try {
+      const saved = localStorage.getItem('omnimarket_currency');
+      if (saved && CURRENCY_MAP[saved as CurrencyCode]) {
+        return saved as CurrencyCode;
+      }
+      return 'USD';
+    } catch {
+      return 'USD';
+    }
+  });
+
+  const setSelectedCurrency = (currency: CurrencyCode) => {
+    setSelectedCurrencyState(currency);
+    try {
+      localStorage.setItem('omnimarket_currency', currency);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const currentCurrencyConfig = CURRENCY_MAP[selectedCurrency] || CURRENCY_MAP.USD;
+
+  const formatPrice = (
+    amountInUSD: number, 
+    targetCurrency?: CurrencyCode, 
+    options?: { showCode?: boolean; customDecimals?: number }
+  ) => {
+    return formatCurrency(amountInUSD, targetCurrency || selectedCurrency, options);
+  };
+
+  const convertPrice = (amountInUSD: number, targetCurrency?: CurrencyCode) => {
+    return convertFromUSD(amountInUSD, targetCurrency || selectedCurrency);
+  };
 
   // Toasts
   const [toasts, setToasts] = useState<ToastInfo[]>([]);
@@ -434,6 +535,189 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error(e);
     }
   }, [isAdultVerified, userAge]);
+
+  // Temu Gamification & Ultra Rewards State
+  const [spinsRemaining, setSpinsRemaining] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('omnimarket_spins');
+      return saved !== null ? parseInt(saved, 10) : 3;
+    } catch {
+      return 3;
+    }
+  });
+
+  const [walletCredit, setWalletCredit] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('omnimarket_wallet_credit');
+      return saved !== null ? parseFloat(saved) : 25.00;
+    } catch {
+      return 25.00;
+    }
+  });
+
+  const [claimedBundles, setClaimedBundles] = useState<CouponBundleItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('omnimarket_claimed_bundles');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [slashItems, setSlashItems] = useState<SlashItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('omnimarket_slash_items');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+
+    const selectedSlashProducts = products.slice(0, 6);
+    return selectedSlashProducts.map((p, idx) => {
+      const initialSlashes: SlashHistoryItem[] = [
+        { id: `sh-1-${idx}`, user: 'Sarah M.', amount: 14.50, time: '2m ago', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80' },
+        { id: `sh-2-${idx}`, user: 'Kevin P.', amount: 18.20, time: '5m ago', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' },
+        { id: `sh-3-${idx}`, user: 'Chloe B.', amount: 12.00, time: '12m ago', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' },
+      ];
+      const slashedTotal = initialSlashes.reduce((acc, s) => acc + s.amount, 0);
+      const curPrice = Math.max(0.01, p.price - slashedTotal);
+      return {
+        id: `slash-${p.id}`,
+        productId: p.id,
+        product: p,
+        originalPrice: p.price,
+        currentPrice: Number(curPrice.toFixed(2)),
+        targetPrice: 0,
+        slashedAmount: Number(slashedTotal.toFixed(2)),
+        slashPercentage: Math.min(96, Math.round((slashedTotal / p.price) * 100)),
+        slashesCount: initialSlashes.length,
+        expiresAt: '23h 48m',
+        status: 'active',
+        slashHistory: initialSlashes
+      };
+    });
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('omnimarket_spins', spinsRemaining.toString());
+      localStorage.setItem('omnimarket_wallet_credit', walletCredit.toString());
+      localStorage.setItem('omnimarket_claimed_bundles', JSON.stringify(claimedBundles));
+      localStorage.setItem('omnimarket_slash_items', JSON.stringify(slashItems));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [spinsRemaining, walletCredit, claimedBundles, slashItems]);
+
+  const addWalletCredit = (amount: number, reason: string = 'Lucky Reward') => {
+    setWalletCredit((prev) => {
+      const updated = Number((prev + amount).toFixed(2));
+      showToast(`💵 +${formatPrice(amount)} Wallet Credit Added!`, `${reason} credited to your Temu Wallet balance.`, 'success');
+      return updated;
+    });
+  };
+
+  const claimBundle = (bundle: CouponBundleItem) => {
+    setClaimedBundles((prev) => {
+      if (prev.some((b) => b.id === bundle.id)) {
+        showToast('Coupon Already Claimed', 'This voucher is already active in your wallet.', 'info');
+        return prev;
+      }
+      showToast(`🎉 Claimed: ${bundle.title}`, `Voucher code ${bundle.code} ready to use at checkout!`, 'success');
+      return [...prev, { ...bundle, isClaimed: true }];
+    });
+  };
+
+  const claimAllBundles = (bundles: CouponBundleItem[]) => {
+    setClaimedBundles((prev) => {
+      const existingIds = new Set(prev.map((b) => b.id));
+      const toAdd = bundles.filter((b) => !existingIds.has(b.id)).map((b) => ({ ...b, isClaimed: true }));
+      if (toAdd.length === 0) {
+        showToast('All Bundles Active', 'All coupon vouchers are already claimed in your account.', 'info');
+        return prev;
+      }
+      showToast(`🎁 Claimed ${toAdd.length} Coupons!`, `$100+ Total savings bundle added to your wallet!`, 'success');
+      return [...prev, ...toAdd];
+    });
+  };
+
+  const spinLuckyWheel = async (): Promise<WheelPrize> => {
+    if (spinsRemaining <= 0) {
+      setSpinsRemaining(1);
+    }
+    setSpinsRemaining((prev) => Math.max(0, prev - 1));
+    const randomPrize = WHEEL_PRIZES[Math.floor(Math.random() * WHEEL_PRIZES.length)];
+    
+    if (randomPrize.type === 'credit_20') {
+      addWalletCredit(20, 'Lucky Wheel Spin');
+    } else if (randomPrize.type === 'credit_50') {
+      addWalletCredit(50, 'Lucky Wheel Grand Spin');
+    } else if (randomPrize.type === 'bundle_100') {
+      claimAllBundles(TEMU_COUPON_BUNDLES);
+    } else if (randomPrize.type === 'bundle_200') {
+      claimAllBundles(TEMU_VIP_200_BUNDLES);
+    }
+    return randomPrize;
+  };
+
+  const performSlash = (slashItemId: string) => {
+    let result = { amount: 0, remaining: 0, isComplete: false };
+    setSlashItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== slashItemId || item.status !== 'active') return item;
+        const slashCut = Math.min(item.currentPrice, Number((Math.random() * 8 + 4).toFixed(2)));
+        const newCurrent = Number(Math.max(0, item.currentPrice - slashCut).toFixed(2));
+        const newSlashed = Number((item.slashedAmount + slashCut).toFixed(2));
+        const isComplete = newCurrent <= 0;
+        const newPercent = Math.min(100, Math.round((newSlashed / item.originalPrice) * 100));
+
+        const mySlash: SlashHistoryItem = {
+          id: `slash-my-${Date.now()}`,
+          user: user?.name || 'You',
+          amount: slashCut,
+          time: 'Just now',
+          avatar: user?.avatar || DEFAULT_USER.avatar
+        };
+
+        result = {
+          amount: slashCut,
+          remaining: newCurrent,
+          isComplete
+        };
+
+        return {
+          ...item,
+          currentPrice: newCurrent,
+          slashedAmount: newSlashed,
+          slashPercentage: newPercent,
+          slashesCount: item.slashesCount + 1,
+          status: isComplete ? 'completed' : 'active',
+          slashHistory: [mySlash, ...item.slashHistory]
+        };
+      })
+    );
+    return result;
+  };
+
+  const claimSlashedItem = (slashItemId: string) => {
+    const item = slashItems.find((s) => s.id === slashItemId);
+    if (!item) return;
+    addToCart(
+      {
+        ...item.product,
+        price: 0.00,
+        originalPrice: item.originalPrice
+      },
+      1
+    );
+    setSlashItems((prev) =>
+      prev.map((s) => (s.id === slashItemId ? { ...s, status: 'claimed' } : s))
+    );
+    showToast(`🎁 Claimed for $0.00!`, `${item.product.name} added to your cart for FREE!`, 'success');
+  };
+
+  const openSpinWheel = () => setActiveModal('spin_wheel_modal');
+  const openPriceSlash = () => setActiveModal('price_slash_modal');
+  const openCouponBundle = () => setActiveModal('coupon_bundle_modal');
+  const openMysteryBox = () => setActiveModal('mystery_box_modal');
 
   // Listen to Firebase Auth state changes
   useEffect(() => {
@@ -1140,7 +1424,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       ],
       installmentDetails: params.installmentDetails,
-      notes: params.notes
+      notes: params.notes,
+      currency: selectedCurrency
     };
 
     setOrders((prev) => [newOrder, ...prev]);
@@ -1600,6 +1885,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markets,
         selectedMarket,
         setSelectedMarket,
+        openMarketDetails,
         addMarket,
         verifyAdultAge,
         isAdultVerified,
@@ -1630,7 +1916,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         toasts,
         showToast,
-        removeToast
+        removeToast,
+
+        // Temu Gamification & Ultra Rewards
+        spinsRemaining,
+        walletCredit,
+        claimedBundles,
+        claimBundle,
+        claimAllBundles,
+        spinLuckyWheel,
+        slashItems,
+        performSlash,
+        claimSlashedItem,
+        addWalletCredit,
+        openSpinWheel,
+        openPriceSlash,
+        openCouponBundle,
+        openMysteryBox,
+
+        // Multi-Currency
+        selectedCurrency,
+        setSelectedCurrency,
+        formatPrice,
+        convertPrice,
+        currencies: SUPPORTED_CURRENCIES,
+        currentCurrencyConfig
       }}
     >
       {children}

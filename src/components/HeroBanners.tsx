@@ -12,12 +12,14 @@ import {
   ChevronLeft, 
   ChevronRight,
   Zap,
-  Percent
+  Percent,
+  Store,
+  Globe
 } from 'lucide-react';
 import { CategorySlug } from '../types';
 
 export const HeroBanners: React.FC = () => {
-  const { setSelectedCategory, openProductDetails, products, applyPromoCode } = useApp();
+  const { setSelectedCategory, openProductDetails, products, applyPromoCode, setActiveModal, markets } = useApp();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Live Flash Sale countdown calculation
@@ -266,6 +268,158 @@ export const HeroBanners: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Temu Interactive Gamification & Rewards Showcase Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* 1. Spin & Win */}
+        <div
+          onClick={() => setActiveModal('spin_wheel_modal')}
+          className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer border-2 border-yellow-300 relative overflow-hidden group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <span className="bg-yellow-300 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+              DAILY LUCKY SPIN
+            </span>
+            <span className="text-2xl group-hover:rotate-45 transition-transform">🎡</span>
+          </div>
+
+          <div className="my-2">
+            <h3 className="text-base font-black text-white leading-tight">
+              Spin Wheel & Win $100
+            </h3>
+            <p className="text-xs text-yellow-100 mt-0.5">
+              Guaranteed instant credit, 90% coupons & gifts!
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-black text-yellow-200 pt-2 border-t border-white/20">
+            <span>Spin for Free →</span>
+            <span className="bg-red-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">HOT</span>
+          </div>
+        </div>
+
+        {/* 2. Slash to $0 */}
+        <div
+          onClick={() => setActiveModal('price_slash_modal')}
+          className="bg-gradient-to-br from-red-600 to-rose-700 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer border-2 border-yellow-300 relative overflow-hidden group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <span className="bg-yellow-300 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-bounce">
+              SLASH IT TO $0.00
+            </span>
+            <span className="text-2xl group-hover:scale-125 transition-transform">⚔️</span>
+          </div>
+
+          <div className="my-2">
+            <h3 className="text-base font-black text-white leading-tight">
+              Group Slash: Get It FREE
+            </h3>
+            <p className="text-xs text-rose-100 mt-0.5">
+              Slice prices with friends until cost reaches $0.00!
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-black text-yellow-200 pt-2 border-t border-white/20">
+            <span>Start Slashing →</span>
+            <span className="text-emerald-300 font-extrabold">100% Free</span>
+          </div>
+        </div>
+
+        {/* 3. $100 Coupon Vault */}
+        <div
+          onClick={() => setActiveModal('coupon_bundle_modal')}
+          className="bg-gradient-to-br from-orange-600 to-amber-700 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer border-2 border-amber-300 relative overflow-hidden group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <span className="bg-yellow-300 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+              1-CLICK BUNDLE
+            </span>
+            <span className="text-2xl group-hover:rotate-12 transition-transform">🎁</span>
+          </div>
+
+          <div className="my-2">
+            <h3 className="text-base font-black text-white leading-tight">
+              $100 Coupon Pack Vault
+            </h3>
+            <p className="text-xs text-amber-100 mt-0.5">
+              4 stackable vouchers automatically in your cart.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-black text-yellow-200 pt-2 border-t border-white/20">
+            <span>Claim 4 Vouchers →</span>
+            <span className="text-yellow-300 font-bold">$100 Saved</span>
+          </div>
+        </div>
+
+        {/* 4. Mystery Gift Box */}
+        <div
+          onClick={() => setActiveModal('mystery_box_modal')}
+          className="bg-gradient-to-br from-purple-700 to-pink-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer border-2 border-yellow-300 relative overflow-hidden group flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <span className="bg-yellow-300 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+              SURPRISE GIFT
+            </span>
+            <span className="text-2xl group-hover:scale-125 transition-transform">📦</span>
+          </div>
+
+          <div className="my-2">
+            <h3 className="text-base font-black text-white leading-tight">
+              Open Mystery Chests
+            </h3>
+            <p className="text-xs text-purple-100 mt-0.5">
+              Tap 1 of 3 treasure boxes to unlock instant rewards!
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-black text-yellow-200 pt-2 border-t border-white/20">
+            <span>Open Mystery Box →</span>
+            <span className="text-pink-200 font-extrabold">Instant Win</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Global Markets Marketplace Showcase Bar */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-amber-950/70 border border-slate-800 hover:border-amber-400/40 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg text-white transition-all">
+        <div className="flex items-center gap-3.5 w-full md:w-auto">
+          <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0">
+            <Store className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-black text-white">
+                Explore {markets.length.toLocaleString()}+ Verified Global Markets
+              </h3>
+              <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Live Directory
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Browse thousands of independent retail storefronts across New York, London, Tokyo, Paris, Berlin & 40+ international hubs.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full md:w-auto justify-end shrink-0">
+          <button
+            onClick={() => setActiveModal('markets_directory_modal')}
+            className="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+            id="hero-open-markets-directory-btn"
+          >
+            <Globe className="w-4 h-4" />
+            <span>Open Markets Directory</span>
+          </button>
+
+          <button
+            onClick={() => setActiveModal('add_market_modal')}
+            className="hidden sm:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all"
+            id="hero-add-market-btn"
+          >
+            <span>+ Create Market (21+)</span>
+          </button>
+        </div>
       </div>
 
       {/* Trust & Guarantee Strip */}

@@ -370,6 +370,45 @@ export interface Order {
   checkpoints: TrackingCheckpoint[];
   installmentDetails?: InstallmentDetails;
   notes?: string;
+  currency?: CurrencyCode;
+}
+
+export type CurrencyCode =
+  | 'USD'
+  | 'EUR'
+  | 'GBP'
+  | 'JPY'
+  | 'CAD'
+  | 'AUD'
+  | 'CNY'
+  | 'INR'
+  | 'NGN'
+  | 'BRL'
+  | 'AED'
+  | 'SAR'
+  | 'CHF'
+  | 'ZAR'
+  | 'SGD'
+  | 'MXN'
+  | 'KRW'
+  | 'TRY'
+  | 'KES'
+  | 'GHS'
+  | 'PHP'
+  | 'IDR'
+  | 'SEK'
+  | 'NZD';
+
+export interface CurrencyConfig {
+  code: CurrencyCode;
+  name: string;
+  symbol: string;
+  rateAgainstUSD: number;
+  symbolPosition: 'before' | 'after';
+  decimals: number;
+  flag: string;
+  region: 'Americas' | 'Europe' | 'Asia Pacific' | 'Middle East & Africa';
+  popular?: boolean;
 }
 
 export interface PromoCode {
@@ -378,6 +417,51 @@ export interface PromoCode {
   value: number;
   minOrder: number;
   description: string;
+}
+
+export interface CouponBundleItem {
+  id: string;
+  code: string;
+  discountAmount: number;
+  minSpend: number;
+  title: string;
+  description: string;
+  expiresInHours: number;
+  isClaimed: boolean;
+}
+
+export interface WheelPrize {
+  id: string;
+  label: string;
+  sublabel: string;
+  type: 'bundle_100' | 'discount_50' | 'free_gift' | 'credit_20' | 'discount_90' | 'credit_50' | 'bundle_200' | 'mystery_box';
+  color: string;
+  textColor: string;
+  value: number;
+  icon: string;
+}
+
+export interface SlashHistoryItem {
+  id: string;
+  user: string;
+  amount: number;
+  time: string;
+  avatar: string;
+}
+
+export interface SlashItem {
+  id: string;
+  productId: string;
+  product: Product;
+  originalPrice: number;
+  currentPrice: number;
+  targetPrice: number; // 0
+  slashedAmount: number;
+  slashPercentage: number;
+  slashesCount: number;
+  expiresAt: string;
+  status: 'active' | 'completed' | 'claimed';
+  slashHistory: SlashHistoryItem[];
 }
 
 export interface FilterState {
@@ -391,9 +475,11 @@ export interface FilterState {
   brand: string;
   location: string;
   sortBy: 'popular' | 'price-low' | 'price-high' | 'rating' | 'newest' | 'discount';
-  // Amazon-Specific Filters
+  // Amazon & Temu Advanced Filters
   primeOnly?: boolean;
   dealsOnly?: boolean;
   subscribeAndSaveOnly?: boolean;
   bestSellersOnly?: boolean;
+  under5Only?: boolean;
+  slashDealsOnly?: boolean;
 }

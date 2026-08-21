@@ -16,7 +16,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const PrimeModal: React.FC = () => {
-  const { activeModal, setActiveModal, isPrimeMember, togglePrimeMembership, activatePrimeTrial } = useApp();
+  const { activeModal, setActiveModal, isPrimeMember, togglePrimeMembership, activatePrimeTrial, formatPrice } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly' | 'student'>('annual');
 
   if (activeModal !== 'prime_modal') return null;
@@ -163,8 +163,8 @@ export const PrimeModal: React.FC = () => {
                   Best Value
                 </span>
                 <div className="text-xs font-bold text-slate-900 mt-1">Annual</div>
-                <div className="text-base font-black text-slate-900 mt-1">$139<span className="text-xs font-normal text-slate-500">/yr</span></div>
-                <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Save $40.88/yr</div>
+                <div className="text-base font-black text-slate-900 mt-1">{formatPrice(139)}<span className="text-xs font-normal text-slate-500">/yr</span></div>
+                <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Save {formatPrice(40.88)}/yr</div>
               </div>
 
               <div 
@@ -176,7 +176,7 @@ export const PrimeModal: React.FC = () => {
                 }`}
               >
                 <div className="text-xs font-bold text-slate-900">Monthly</div>
-                <div className="text-base font-black text-slate-900 mt-1">$14.99<span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <div className="text-base font-black text-slate-900 mt-1">{formatPrice(14.99)}<span className="text-xs font-normal text-slate-500">/mo</span></div>
                 <div className="text-[10px] text-slate-500 mt-0.5">Flexible billing</div>
               </div>
 
@@ -189,7 +189,7 @@ export const PrimeModal: React.FC = () => {
                 }`}
               >
                 <div className="text-xs font-bold text-slate-900">Prime Student</div>
-                <div className="text-base font-black text-slate-900 mt-1">$7.49<span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <div className="text-base font-black text-slate-900 mt-1">{formatPrice(7.49)}<span className="text-xs font-normal text-slate-500">/mo</span></div>
                 <div className="text-[10px] text-blue-600 font-semibold mt-0.5">6 Months Free</div>
               </div>
             </div>

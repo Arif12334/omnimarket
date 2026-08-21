@@ -24,7 +24,8 @@ export const OrderReceiptModal: React.FC = () => {
     setActiveModal, 
     activeOrder, 
     openTrackOrder,
-    payOrderInstallment
+    payOrderInstallment,
+    formatPrice
   } = useApp();
 
   if (activeModal !== 'order_receipt' || !activeOrder) return null;
@@ -34,6 +35,7 @@ export const OrderReceiptModal: React.FC = () => {
   };
 
   const installments = activeOrder.installmentDetails;
+  const orderCurrency = activeOrder.currency || 'USD';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
@@ -164,12 +166,12 @@ export const OrderReceiptModal: React.FC = () => {
                       <h5 className="font-bold text-slate-900">{item.product.name}</h5>
                       <div className="text-[11px] text-slate-400 mt-0.5">
                         {item.selectedColor && <span>Color: {item.selectedColor} • </span>}
-                        <span>Qty: {item.quantity} × ${item.unitPrice.toFixed(2)}</span>
+                        <span>Qty: {item.quantity} × {formatPrice(item.unitPrice, orderCurrency)}</span>
                       </div>
                     </div>
                   </div>
                   <span className="font-extrabold text-slate-900">
-                    ${(item.unitPrice * item.quantity).toFixed(2)}
+                    {formatPrice(item.unitPrice * item.quantity, orderCurrency)}
                   </span>
                 </div>
               ))}
@@ -232,7 +234,7 @@ export const OrderReceiptModal: React.FC = () => {
                       </div>
 
                       <div className="my-1">
-                        <span className="text-sm font-extrabold text-slate-900">${item.amount.toFixed(2)}</span>
+                        <span className="text-sm font-extrabold text-slate-900">{formatPrice(item.amount, orderCurrency)}</span>
                         <span className="text-[10px] text-slate-400 block truncate">{item.dueDate}</span>
                       </div>
 
@@ -252,10 +254,10 @@ export const OrderReceiptModal: React.FC = () => {
 
               <div className="flex items-center justify-between text-xs pt-1 text-slate-600">
                 <span>
-                  Paid so far: <strong className="text-emerald-700">${installments.paidAmount.toFixed(2)}</strong>
+                  Paid so far: <strong className="text-emerald-700">{formatPrice(installments.paidAmount, orderCurrency)}</strong>
                 </span>
                 <span>
-                  Remaining balance: <strong className="text-indigo-700">${installments.remainingAmount.toFixed(2)}</strong>
+                  Remaining balance: <strong className="text-indigo-700">{formatPrice(installments.remainingAmount, orderCurrency)}</strong>
                 </span>
               </div>
             </div>
@@ -265,34 +267,34 @@ export const OrderReceiptModal: React.FC = () => {
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-2">
             <div className="flex justify-between text-slate-600">
               <span>Subtotal</span>
-              <span className="font-semibold text-slate-900">${activeOrder.subtotal.toFixed(2)}</span>
+              <span className="font-semibold text-slate-900">{formatPrice(activeOrder.subtotal, orderCurrency)}</span>
             </div>
 
             {activeOrder.discountAmount > 0 && (
               <div className="flex justify-between text-emerald-600 font-bold">
                 <span>Discount Promo</span>
-                <span>-${activeOrder.discountAmount.toFixed(2)}</span>
+                <span>-{formatPrice(activeOrder.discountAmount, orderCurrency)}</span>
               </div>
             )}
 
             <div className="flex justify-between text-slate-600">
               <span>Delivery Fee ({activeOrder.shippingMethod.name})</span>
-              <span>{activeOrder.deliveryFee === 0 ? 'FREE' : `$${activeOrder.deliveryFee.toFixed(2)}`}</span>
+              <span>{activeOrder.deliveryFee === 0 ? 'FREE' : formatPrice(activeOrder.deliveryFee, orderCurrency)}</span>
             </div>
 
             <div className="flex justify-between text-slate-600">
               <span>Estimated Sales Tax</span>
-              <span>${activeOrder.tax.toFixed(2)}</span>
+              <span>{formatPrice(activeOrder.tax, orderCurrency)}</span>
             </div>
 
             <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
-              <span>{installments ? 'Total Order Amount' : 'Total Paid'}</span>
-              <span className="text-indigo-600 text-lg">${activeOrder.total.toFixed(2)}</span>
+              <span>{installments ? 'Total Order Amount' : 'Total Paid'} ({orderCurrency})</span>
+              <span className="text-indigo-600 text-lg font-black">{formatPrice(activeOrder.total, orderCurrency)}</span>
             </div>
             {installments && (
               <div className="flex justify-between text-xs text-emerald-700 font-bold">
                 <span>Down payment charged at checkout</span>
-                <span>${(installments.paidAmount).toFixed(2)}</span>
+                <span>{formatPrice(installments.paidAmount, orderCurrency)}</span>
               </div>
             )}
           </div>

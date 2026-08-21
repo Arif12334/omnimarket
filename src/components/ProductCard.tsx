@@ -30,7 +30,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     addToWishlist,
     removeFromWishlist,
     isPrimeMember,
-    selectedCity
+    selectedCity,
+    formatPrice
   } = useApp();
 
   const isSavedInWishlist = wishlists.some((wl) => wl.items.some((i) => i.productId === product.id));
@@ -141,13 +142,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {product.name}
           </h3>
 
+          {/* Temu Lightning Deal Claim Bar & Social Proof */}
+          {(product.isLightningDeal || product.isFlashSale) && (
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-bold">
+                <span className="text-red-600 flex items-center gap-0.5">
+                  <Flame className="w-3 h-3 fill-red-600" />
+                  {product.lightningDealClaimedPercentage || 84}% Claimed
+                </span>
+                <span className="text-slate-400">
+                  {product.stockCount && product.stockCount < 10 ? `Only ${product.stockCount} left!` : '1.2k+ sold'}
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-400 to-red-600 rounded-full"
+                  style={{ width: `${product.lightningDealClaimedPercentage || 84}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Amazon Prime & Delivery ETA */}
           <div className="mt-2 space-y-1">
             <div className="flex items-center gap-2">
               <PrimeBadge size="sm" showDelivery deliveryTime={product.deliveryEstimate || 'Tomorrow, 8 AM - 12 PM'} />
             </div>
             <p className="text-[11px] text-slate-500">
-              Ships to <strong className="text-slate-700">{selectedCity}</strong>
+              Ships to <strong className="text-slate-700">{selectedCity}</strong> • <span className="text-emerald-600 font-semibold">Free Returns</span>
             </p>
           </div>
 
@@ -162,19 +184,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* Pricing & CTA Actions */}
         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
           <div>
-            <div className="flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-base sm:text-lg font-black text-slate-900">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price)}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
                 <span className="text-xs text-slate-400 line-through">
-                  ${product.originalPrice.toFixed(2)}
+                  {formatPrice(product.originalPrice)}
                 </span>
               )}
             </div>
             {product.price >= 35 && (
               <p className="text-[10px] text-slate-600 font-semibold flex items-center gap-1 mt-0.5">
-                <span>or 4x ${(product.price / 4).toFixed(2)} with BNPL</span>
+                <span>or 4x {formatPrice(product.price / 4)} split</span>
               </p>
             )}
           </div>

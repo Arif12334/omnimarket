@@ -59,7 +59,9 @@ export const ProductDetailsModal: React.FC = () => {
     products,
     addBundleToCart,
     addSubscriptionToCart,
-    showToast
+    showToast,
+    formatPrice,
+    selectedCurrency
   } = useApp();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -438,13 +440,13 @@ export const ProductDetailsModal: React.FC = () => {
 
               {/* Price Details */}
               <div className="border-t border-b border-slate-100 py-3">
-                <div className="flex items-baseline gap-2.5">
+                <div className="flex items-baseline gap-2.5 flex-wrap">
                   <span className="text-2xl font-black text-slate-900">
-                    ${selectedProduct.price.toFixed(2)}
+                    {formatPrice(selectedProduct.price)}
                   </span>
                   {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
                     <span className="text-sm text-slate-400 line-through">
-                      ${selectedProduct.originalPrice.toFixed(2)}
+                      {formatPrice(selectedProduct.originalPrice)}
                     </span>
                   )}
                   {selectedProduct.discountPercentage && (
@@ -467,7 +469,7 @@ export const ProductDetailsModal: React.FC = () => {
                     <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
                     <div className="text-xs">
                       <span className="font-bold text-slate-900">Pay Little by Little: </span>
-                      <span className="text-slate-700">4 payments of ${(selectedProduct.price / 4).toFixed(2)} at 0% APR</span>
+                      <span className="text-slate-700">4 payments of {formatPrice(selectedProduct.price / 4)} at 0% APR</span>
                     </div>
                   </div>
 
@@ -485,7 +487,7 @@ export const ProductDetailsModal: React.FC = () => {
                       {getInstallmentPlans(selectedProduct.price).slice(0, 4).map((plan) => (
                         <div key={plan.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs">
                           <div className="font-bold text-slate-800">{plan.title}</div>
-                          <div className="font-black text-indigo-600 mt-0.5">${plan.installmentAmount.toFixed(2)}</div>
+                          <div className="font-black text-indigo-600 mt-0.5">{formatPrice(plan.installmentAmount)}</div>
                           <div className="text-[10px] text-slate-500">{plan.periodLabel}</div>
                         </div>
                       ))}
@@ -581,7 +583,7 @@ export const ProductDetailsModal: React.FC = () => {
                         <input type="radio" checked={purchaseMode === 'one_time'} onChange={() => setPurchaseMode('one_time')} />
                         <span className="font-bold text-slate-900">One-time purchase</span>
                       </div>
-                      <span className="font-black text-slate-900">${selectedProduct.price.toFixed(2)}</span>
+                      <span className="font-black text-slate-900">{formatPrice(selectedProduct.price)}</span>
                     </label>
 
                     <label 
@@ -595,10 +597,10 @@ export const ProductDetailsModal: React.FC = () => {
                           <input type="radio" checked={purchaseMode === 'subscription'} onChange={() => setPurchaseMode('subscription')} />
                           <span className="font-bold text-emerald-800 flex items-center gap-1">
                             <Repeat className="w-3.5 h-3.5" />
-                            <span>Subscribe & Save</span>
+                            <span>Subscribe & Save (10% Off)</span>
                           </span>
                         </div>
-                        <span className="font-black text-emerald-700">${subscriptionPrice.toFixed(2)}</span>
+                        <span className="font-black text-emerald-700">{formatPrice(subscriptionPrice)}</span>
                       </div>
 
                       {purchaseMode === 'subscription' && (
@@ -685,13 +687,55 @@ export const ProductDetailsModal: React.FC = () => {
                     <Heart className={`w-3.5 h-3.5 ${isSavedInWishlist ? 'fill-rose-500 text-rose-500' : ''}`} />
                     <span>{isSavedInWishlist ? 'In your Wishlist ✓' : 'Add to Wishlist'}</span>
                   </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveModal('price_slash_modal');
+                    }}
+                    className="w-full py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>⚔️ Slash Price to $0.00 (Group Slash)</span>
+                  </button>
+                </div>
+
+                {/* OmniMarket Trust & Guarantees Badges */}
+                <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 text-[11px] space-y-2">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-black text-slate-900 block">OmniMarket Price Adjustment Guarantee</span>
+                      <span className="text-slate-600 text-[10px] leading-tight block">
+                        If price drops within 30 days, we instantly refund the difference.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 pt-1 border-t border-amber-200/60">
+                    <RotateCcw className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-900 block">90-Day Free Returns</span>
+                      <span className="text-slate-600 text-[10px] leading-tight block">
+                        Free return shipping label provided with 100% money-back guarantee.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 pt-1 border-t border-amber-200/60">
+                    <Truck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-900 block">On-Time Delivery or $5 Credit</span>
+                      <span className="text-slate-600 text-[10px] leading-tight block">
+                        Instant credit issued if package arrives past estimated date.
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Meta details */}
                 <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-100 space-y-1">
                   <div className="flex justify-between">
                     <span>Ships from</span>
-                    <span className="font-semibold text-slate-800">Amazon.com</span>
+                    <span className="font-semibold text-slate-800">OmniMarket Global Hub</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Sold by</span>
@@ -699,11 +743,11 @@ export const ProductDetailsModal: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Returns</span>
-                    <span className="font-semibold text-slate-800">30-day refund/replacement</span>
+                    <span className="font-semibold text-emerald-700 font-bold">90-Day Free Returns</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Payment</span>
-                    <span className="font-semibold text-emerald-600">Secure transaction</span>
+                    <span className="font-semibold text-emerald-600">256-Bit SSL Encrypted</span>
                   </div>
                 </div>
               </div>
@@ -727,7 +771,7 @@ export const ProductDetailsModal: React.FC = () => {
                         <img src={p.images[0]} alt={p.name} className="w-12 h-12 rounded object-cover" />
                         <div>
                           <p className="text-xs font-bold text-slate-900 truncate max-w-[140px]">{p.name}</p>
-                          <p className="text-xs font-black text-slate-900">${p.price.toFixed(2)}</p>
+                          <p className="text-xs font-black text-slate-900">{formatPrice(p.price)}</p>
                         </div>
                       </div>
                       {idx < allBundleProducts.length - 1 && (
@@ -740,11 +784,11 @@ export const ProductDetailsModal: React.FC = () => {
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
                     <span className="text-xs text-slate-500 block">Total price for all 3:</span>
-                    <span className="text-lg font-black text-slate-900">${bundleTotalPrice.toFixed(2)}</span>
+                    <span className="text-lg font-black text-slate-900">{formatPrice(bundleTotalPrice)}</span>
                   </div>
                   <button
                     onClick={handleAddBundle}
-                    className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-colors whitespace-nowrap"
+                    className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-colors whitespace-nowrap cursor-pointer"
                   >
                     Add all 3 to Cart
                   </button>

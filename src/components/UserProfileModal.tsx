@@ -44,7 +44,8 @@ export const UserProfileModal: React.FC = () => {
     toggleTwoFactor, 
     changePassword, 
     logout,
-    payOrderInstallment
+    payOrderInstallment,
+    formatPrice
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'orders' | 'security'>('profile');
@@ -528,7 +529,7 @@ export const UserProfileModal: React.FC = () => {
                         </div>
 
                         <div className="text-left sm:text-right">
-                          <span className="text-base font-extrabold text-slate-900">${order.total.toFixed(2)}</span>
+                          <span className="text-base font-extrabold text-slate-900">{formatPrice(order.total, order.currency || 'USD')}</span>
                           <span className="text-[11px] text-slate-400 block capitalize">
                             Via {order.paymentMethod}
                           </span>
@@ -551,7 +552,7 @@ export const UserProfileModal: React.FC = () => {
                                 <span className="text-[10px] text-slate-400">Qty: {it.quantity}</span>
                               </div>
                             </div>
-                            <span className="font-bold text-slate-800">${(it.unitPrice * it.quantity).toFixed(2)}</span>
+                            <span className="font-bold text-slate-800">{formatPrice(it.unitPrice * it.quantity, order.currency || 'USD')}</span>
                           </div>
                         ))}
                       </div>
@@ -586,7 +587,7 @@ export const UserProfileModal: React.FC = () => {
                                 }`}
                               >
                                 <span className="text-[9px] text-slate-400 block">#{item.number}</span>
-                                <span className="font-extrabold text-[11px] block">${item.amount.toFixed(2)}</span>
+                                <span className="font-extrabold text-[11px] block">{formatPrice(item.amount, order.currency || 'USD')}</span>
                                 <span className={`text-[9px] font-bold block ${item.status === 'paid' ? 'text-emerald-600' : 'text-slate-500'}`}>
                                   {item.status === 'paid' ? 'Paid' : item.dueDate}
                                 </span>
@@ -597,7 +598,7 @@ export const UserProfileModal: React.FC = () => {
                           {order.installmentDetails.status === 'active' && (
                             <div className="flex items-center justify-between pt-1 border-t border-indigo-100/80 text-[11px]">
                               <span className="text-slate-600">
-                                Remaining Balance: <strong className="text-indigo-900">${order.installmentDetails.remainingAmount.toFixed(2)}</strong>
+                                Remaining Balance: <strong className="text-indigo-900">{formatPrice(order.installmentDetails.remainingAmount, order.currency || 'USD')}</strong>
                               </span>
                               {(() => {
                                 const nextDue = order.installmentDetails.schedule.find((s) => s.status === 'pending');
@@ -608,7 +609,7 @@ export const UserProfileModal: React.FC = () => {
                                     onClick={() => payOrderInstallment(order.id, nextDue.number)}
                                     className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] shadow-2xs"
                                   >
-                                    Pay Next Split (${nextDue.amount.toFixed(2)})
+                                    Pay Next Split ({formatPrice(nextDue.amount, order.currency || 'USD')})
                                   </button>
                                 );
                               })()}

@@ -25,7 +25,8 @@ export const WishlistModal: React.FC = () => {
     deleteWishlist, 
     addToCart,
     openProductDetails,
-    showToast 
+    showToast,
+    formatPrice
   } = useApp();
 
   const [activeListId, setActiveListId] = useState<string>(wishlists[0]?.id || 'wl-1');
@@ -219,13 +220,13 @@ export const WishlistModal: React.FC = () => {
                         {item.product.name}
                       </h4>
 
-                      <div className="flex items-center gap-2.5 mt-1">
+                      <div className="flex items-center gap-2.5 mt-1 flex-wrap">
                         <span className="text-sm font-black text-slate-900">
-                          ${item.product.price.toFixed(2)}
+                          {formatPrice(item.product.price)}
                         </span>
                         {item.product.originalPrice && item.product.originalPrice > item.product.price && (
                           <span className="text-xs text-slate-400 line-through">
-                            ${item.product.originalPrice.toFixed(2)}
+                            {formatPrice(item.product.originalPrice)}
                           </span>
                         )}
                         <PrimeBadge size="sm" />

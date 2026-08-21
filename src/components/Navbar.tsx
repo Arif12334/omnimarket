@@ -20,7 +20,10 @@ import {
   Heart,
   Flame,
   Bot,
-  Store
+  Store,
+  PlusCircle,
+  Coins,
+  Globe
 } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
 import { CategorySlug } from '../types';
@@ -45,7 +48,10 @@ export const Navbar: React.FC = () => {
     isPrimeMember,
     wishlists,
     selectedZipCode,
-    selectedCity
+    selectedCity,
+    selectedCurrency,
+    currentCurrencyConfig,
+    formatPrice
   } = useApp();
 
   const [searchFocused, setSearchFocused] = useState(false);
@@ -196,6 +202,31 @@ export const Navbar: React.FC = () => {
               <span>Ask Rufus AI</span>
             </button>
 
+            {/* Top Bar Currency Selector Trigger */}
+            <button
+              onClick={() => setActiveModal('currency_modal')}
+              className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-amber-300 border border-slate-700/80 px-2 py-0.5 rounded font-bold transition-all text-[11px] shadow-2xs cursor-pointer group"
+              id="top-bar-currency-btn"
+              title="Change Shopping & Checkout Currency (24 Supported)"
+            >
+              <span className="text-xs">{currentCurrencyConfig.flag}</span>
+              <span className="font-mono font-bold text-amber-300">{selectedCurrency}</span>
+              <span className="text-[10px] text-slate-400 font-semibold group-hover:text-amber-200">
+                ({currentCurrencyConfig.symbol.trim()})
+              </span>
+            </button>
+
+            {/* Top Bar Explore 1,200+ Markets */}
+            <button
+              onClick={() => setActiveModal('markets_directory_modal')}
+              className="flex items-center gap-1 bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded font-bold transition-colors text-[11px]"
+              id="top-bar-markets-directory-btn"
+              title="Browse 1,250+ Verified Global Markets"
+            >
+              <Store className="w-3.5 h-3.5 text-amber-400" />
+              <span>Markets (1,250+)</span>
+            </button>
+
             {/* Top Bar Add Market Trigger (Adults > 20) */}
             <button
               onClick={() => setActiveModal('add_market_modal')}
@@ -203,7 +234,7 @@ export const Navbar: React.FC = () => {
               id="top-bar-add-market-link"
               title="Add New Market Storefront (Adults 21+)"
             >
-              <Store className="w-3.5 h-3.5 text-amber-400" />
+              <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
               <span>Add Market (21+)</span>
             </button>
 
@@ -246,7 +277,7 @@ export const Navbar: React.FC = () => {
 
       {/* Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-        <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 sm:gap-4">
           
           {/* Logo & Brand */}
           <div className="flex items-center gap-6">
@@ -438,7 +469,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Right Action Icons: Wishlist, Returns & Orders, User Profile, Cart */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 sm:border-transparent">
 
             {/* Add Market / Storefront Hub Trigger (Adults 21+) */}
             <button
@@ -454,6 +485,16 @@ export const Navbar: React.FC = () => {
               </span>
             </button>
             
+            {/* Temu Spin & Win Quick Trigger */}
+            <button
+              onClick={() => setActiveModal('spin_wheel_modal')}
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              title="Spin Lucky Wheel for $100 Rewards"
+            >
+              <span>🎡</span>
+              <span className="hidden xl:inline">Spin & Win</span>
+            </button>
+
             {/* Amazon Wishlist Trigger */}
             <button
               onClick={() => setActiveModal('wishlist_modal')}
@@ -606,6 +647,22 @@ export const Navbar: React.FC = () => {
 
                     <button
                       onClick={() => {
+                        setActiveModal('spin_wheel_modal');
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-orange-600 hover:bg-orange-50 font-bold flex items-center justify-between transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span>🎡</span>
+                        <span>OmniMarket Rewards & Spins</span>
+                      </div>
+                      <span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                        $100 Win
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         setActiveModal('prime_modal');
                         setUserMenuOpen(false);
                       }}
@@ -645,6 +702,24 @@ export const Navbar: React.FC = () => {
                     >
                       <Compass className="w-4 h-4 text-indigo-500" />
                       <span>Live Delivery Tracking</span>
+                    </button>
+
+                    {/* Change Currency Button */}
+                    <button
+                      onClick={() => {
+                        setActiveModal('currency_modal');
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-amber-50 hover:text-amber-700 font-medium flex items-center justify-between transition-colors"
+                      id="dropdown-change-currency-btn"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Coins className="w-4 h-4 text-amber-500" />
+                        <span>Currency: {selectedCurrency}</span>
+                      </div>
+                      <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono font-bold text-slate-700">
+                        {currentCurrencyConfig.flag} {currentCurrencyConfig.symbol}
+                      </span>
                     </button>
 
                     {/* Google Switch Account Button */}
@@ -698,7 +773,7 @@ export const Navbar: React.FC = () => {
               <div className="text-left hidden sm:block">
                 <span className="text-[10px] text-slate-800 uppercase font-bold block leading-none">Cart</span>
                 <span className="text-xs font-black text-slate-950 block leading-tight">
-                  ${cartSubtotal.toFixed(2)}
+                  {formatPrice(cartSubtotal)}
                 </span>
               </div>
             </button>
@@ -742,6 +817,14 @@ export const Navbar: React.FC = () => {
               }`}
             >
               All
+            </button>
+
+            <button
+              onClick={() => setActiveModal('markets_directory_modal')}
+              className="px-3 py-1 rounded-lg text-xs font-black whitespace-nowrap bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 flex items-center gap-1 shadow-2xs"
+            >
+              <Store className="w-3 h-3 text-amber-600" />
+              <span>Markets (1,250+)</span>
             </button>
 
             <button
